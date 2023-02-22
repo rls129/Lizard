@@ -1,0 +1,40 @@
+%ignore WS
+root: entity*  architechture*
+
+entity: "entity" identifier "is" portdecl?  "end"  ("entity" )? (identifier )? ";"
+
+portdecl: "port"  "(" port  (";"  port  )*  ")"  ";"
+port:  identifier  ":"  PORTDIRECTION  PORTTYPE
+
+PORTTYPE: "std_ulogic" | "std_logic"
+PORTDIRECTION: "in" | "out" | "inout" | "direction"
+
+architechture: "architecture"  identifier  "of"  identifier  "is"  componentdecl*  signaldecl*  archdefination+  "end"  identifier?  ";"
+
+componentdecl: "component_todo"
+signaldecl: "signal_todo"
+
+archdefination: "begin"  (process ";")*
+process: shorthandprocess | longformprocess
+longformprocess: "longformprocess_todo"
+shorthandprocess: identifier  "<=" value
+
+value: identifier | literal | "(" binary_expression ")" | "(" unary_expression ")"
+binary_expression: value BINARY_OPERATOR value
+BINARY_OPERATOR: "and"| "or"| "nand"| "nor"| "xor"
+unary_expression: UNARY_OPERATOR value
+UNARY_OPERATOR: "not"
+
+BVALUE: ("b"|"B")? "\"" /[0,1]+/ "\""
+OVALUE: ("o"|"O")"\""("0"|"1"|"2"|"3"|"4"|"5"|"6"|"7")*"\""
+XVALUE: ("x"|"X") "\"" /[0,1,2,3,4,5,6,7,8,9,a,b,c,,d,e,f]+/ "\""
+STRING: ESCAPED_STRING
+literal: BVALUE|OVALUE|XVALUE|INT|STRING
+
+%import common.WS
+%import common.WORD
+%import common.CNAME
+%import common.ESCAPED_STRING
+%import common.INT
+
+!identifier: CNAME
