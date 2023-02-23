@@ -5,6 +5,10 @@ ENTITY HalfAdder IS
           s: OUT std_logic;
           c: OUT std_logic
     );
+END entity HalfAdder;
+
+ENTITY HAlfAdder IS
+
 END HalfAdder;
 
 ARCHITECTURE addArchitecture1 of HalfAdder IS

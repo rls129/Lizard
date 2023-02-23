@@ -1,15 +1,15 @@
 %ignore WS
 root: entity*  architechture*
 
-entity: "entity" identifier "is" portdecl?  "end"  ("entity" )? (identifier )? ";"
+entity: "entity" IDENTIFIER "is" portdecl?  "end"  ("entity" )? (IDENTIFIER )? ";"
 
 portdecl: "port"  "(" port  (";"  port  )*  ")"  ";"
-port:  identifier  ":"  PORTDIRECTION  PORTTYPE
+port:  IDENTIFIER  ":"  PORTDIRECTION  PORTTYPE
 
 PORTTYPE: "std_ulogic" | "std_logic"
 PORTDIRECTION: "in" | "out" | "inout" | "direction"
 
-architechture: "architecture"  identifier  "of"  identifier  "is"  componentdecl*  signaldecl*  archdefination+  "end"  identifier?  ";"
+architechture: "architecture"  IDENTIFIER  "of"  IDENTIFIER  "is"  componentdecl*  signaldecl*  archdefination  "end"  "architecture"? IDENTIFIER?  ";"
 
 componentdecl: "component_todo"
 signaldecl: "signal_todo"
@@ -17,9 +17,9 @@ signaldecl: "signal_todo"
 archdefination: "begin"  (process ";")*
 process: shorthandprocess | longformprocess
 longformprocess: "longformprocess_todo"
-shorthandprocess: identifier  "<=" value
+shorthandprocess: IDENTIFIER  "<=" value
 
-value: identifier | literal | "(" binary_expression ")" | "(" unary_expression ")"
+value: IDENTIFIER | literal | "(" binary_expression ")" | "(" unary_expression ")"
 binary_expression: value BINARY_OPERATOR value
 BINARY_OPERATOR: "and"| "or"| "nand"| "nor"| "xor"
 unary_expression: UNARY_OPERATOR value
@@ -37,4 +37,4 @@ literal: bvalue|ovalue|xvalue|INT|STRING
 %import common.ESCAPED_STRING
 %import common.INT
 
-!identifier: CNAME
+IDENTIFIER: CNAME

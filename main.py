@@ -10,7 +10,7 @@ def main():
     entities = get_entites(ast)
     print_entities(entities)
     print(error.errno)
-    # architectures = get_architecture(ast, entities)
+    architectures = get_architecture(ast, entities)
     # print_architecture(architectures)
 
 main()

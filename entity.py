@@ -24,14 +24,14 @@ def get_entites(ast: Tree) -> List[Entity]:
         if tokens.data.value == "entity":
             if len(tokens.children) > 2:
                 if (
-                    tokens.children[0].children[0].value
-                    != tokens.children[-1].children[0].value
+                    tokens.children[0].value
+                    != tokens.children[-1].value
                 ):
-                    error.push_error(tokens.children[-1].children[0].line, tokens.children[-1].children[0].column, 
-                                     f"Unmatched Closing Identifier {tokens.children[0].children[0].value}")
+                    error.push_error(tokens.children[-1].line, tokens.children[-1].column, 
+                                     f"Unmatched Closing Identifier {tokens.children[0].value}")
                     continue
             ports = get_ports(tokens)
-            entity_name = tokens.children[0].children[0]
+            entity_name = tokens.children[0]
 
             unique = True
             for e in entities:
@@ -40,7 +40,7 @@ def get_entites(ast: Tree) -> List[Entity]:
                     unique = False
             if unique:
                 entities.append(
-                    Entity(tokens.children[0].children[0].value, ports)
+                    Entity(tokens.children[0].value, ports)
                 )
     return entities
 
@@ -48,12 +48,12 @@ def get_entites(ast: Tree) -> List[Entity]:
 def get_ports(entity: Tree):
     ports = []
     for prop in entity.children:
-        if prop.data.value == "portdecl":
+        if isinstance(prop, Tree) and prop.data.value == "portdecl":
             for port in prop.children:
                 assert port.data.value == "port"
                 ports.append(
                     Port(
-                        port.children[0].children[0].value,
+                        port.children[0].value,
                         port.children[1].value,
                         port.children[2].value,
                     )
