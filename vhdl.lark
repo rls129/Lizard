@@ -25,11 +25,11 @@ BINARY_OPERATOR: "and"| "or"| "nand"| "nor"| "xor"
 unary_expression: UNARY_OPERATOR value
 UNARY_OPERATOR: "not"
 
-BVALUE: ("b"|"B")? "\"" /[0,1]+/ "\""
-OVALUE: ("o"|"O")"\""("0"|"1"|"2"|"3"|"4"|"5"|"6"|"7")*"\""
-XVALUE: ("x"|"X") "\"" /[0,1,2,3,4,5,6,7,8,9,a,b,c,,d,e,f]+/ "\""
+bvalue: ("b"|"B")? "\"" /[0,1]+/ "\""
+ovalue: ("o"|"O")"\""("0"|"1"|"2"|"3"|"4"|"5"|"6"|"7")*"\""
+xvalue: ("x"|"X") "\"" /[0,1,2,3,4,5,6,7,8,9,a,b,c,,d,e,f]+/ "\""
 STRING: ESCAPED_STRING
-literal: BVALUE|OVALUE|XVALUE|INT|STRING
+literal: bvalue|ovalue|xvalue|INT|STRING
 
 %import common.WS
 %import common.WORD
