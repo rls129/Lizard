@@ -1,7 +1,7 @@
 from lark import Token, Tree
 from enum import Enum
 from typing import List
-
+import error
 
 class Port:
     def __init__(self, name, dirn, ptype):
@@ -12,12 +12,10 @@ class Port:
 
 class Entity:
     def __init__(
-        self, name: str, iports: List[Port], oports: List[Port], ioports: List[Port]
+        self, name: str, ports: List[Port]
     ):
         self.name = name
-        self.iports = iports
-        self.oports = oports
-        self.ioports = ioports
+        self.ports = ports
 
 
 def get_entites(ast: Tree) -> List[Entity]:
@@ -25,42 +23,46 @@ def get_entites(ast: Tree) -> List[Entity]:
     for tokens in ast.children:
         if tokens.data.value == "entity":
             if len(tokens.children) > 2:
-                assert (
-                    tokens.children[0].children[0].value
-                    == tokens.children[-1].children[0].value
+                if (
+                    tokens.children[0].value
+                    != tokens.children[-1].value
+                ):
+                    error.push_error(tokens.children[-1].line, tokens.children[-1].column, 
+                                     f"Unmatched Closing Identifier {tokens.children[0].value}")
+                    continue
+            ports = get_ports(tokens)
+            entity_name = tokens.children[0]
+
+            unique = True
+            for e in entities:
+                if e.name == entity_name.value:
+                    error.push_error(entity_name.line, entity_name.column, f"Redefination of entity {e.name}")
+                    unique = False
+            if unique:
+                entities.append(
+                    Entity(tokens.children[0].value, ports)
                 )
-            iports = get_ports(tokens, "in")
-            oports = get_ports(tokens, "out")
-            ioports = get_ports(tokens, "inout")
-            entities.append(
-                Entity(tokens.children[0].children[0].value, iports, oports, ioports)
-            )
     return entities
 
 
-def get_ports(entity: Tree, typ: str):
+def get_ports(entity: Tree):
     ports = []
     for prop in entity.children:
-        if prop.data.value == "portdecl":
+        if isinstance(prop, Tree) and prop.data.value == "portdecl":
             for port in prop.children:
                 assert port.data.value == "port"
-                if port.children[1].value == typ:
-                    ports.append(
-                        Port(
-                            port.children[0].children[0].value,
-                            port.children[1].value,
-                            port.children[2].value,
-                        )
+                ports.append(
+                    Port(
+                        port.children[0].value,
+                        port.children[1].value,
+                        port.children[2].value,
                     )
+                )
     return ports
 
 
 def print_entities(ent: List[Entity]):
     for i in ent:
         print(i.name)
-        for ii in i.iports:
-            print("IPort", ii.name)
-        for ii in i.oports:
-            print("Oport", ii.name)
-        for ii in i.ioports:
-            print("IOport", ii.name)
+        for ii in i.ports:
+            print(ii.type, ii.dirn, ii.name)
