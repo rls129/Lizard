@@ -250,10 +250,10 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
                         name = token.children[0].value
                         flag = False
                         for s in signals:
-                            if s.name == symbol.value:
+                            if s.name == name:
                                 flag = True
                         for s in entity.ports:
-                            if s.name == symbol.value:
+                            if s.name == name:
                                 flag = True
 
                         if flag:
