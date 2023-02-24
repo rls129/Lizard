@@ -9,3 +9,18 @@ def treerecursive(ast: Tree[Token]|Token, indent = 0):
         print("___"*indent, "Token", ast.type, ast.value)
     else:
         print("This cannot happen")
+
+default_values = {
+            "std_logic": 'u',
+            "std_ulogic": 'u',
+            "integer": 0,
+            "boolean": "false"
+            # TODO more default values
+        }
+
+cast_map = {
+    "std_ulogic": "BIT_LITERAL",
+    "std_logic" : "BIT_LITERAL" ,
+    "BIT_LITERAL" :  "BIT_LITERAL",
+
+}

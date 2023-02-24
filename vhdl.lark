@@ -10,13 +10,13 @@ PORTTYPE: "std_ulogic" | "std_logic"
 PORTDIRECTION: "in" | "out" | "inout" | "direction"
 
 architechture: "architecture"  IDENTIFIER  "of"  IDENTIFIER "is"  archsignal*  archdefination  "end"  "architecture"? IDENTIFIER?  ";"
-archsignal: "signal" IDENTIFIER ":" IDENTIFIER (":=" value  )?  ";"
+archsignal: "signal" IDENTIFIER ":" IDENTIFIER ("<=" value  )?  ";"
 
 archdefination: "begin"  (process)*
 process: shorthandprocess | longformprocess
 shorthandprocess: IDENTIFIER  "<=" value ";"
 
-longformprocess: IDENTIFIER ":" "process" sensitivity_list? "is" variables* "begin" statements "end" ";"
+longformprocess: (IDENTIFIER ":")? "process" sensitivity_list? "is" variables* "begin" statements "end" ";"
 statements: statement+
 statement: shorthandprocess | variable_assignment | wait | report | if_statement | while_statement
 if_statement: "if" condition "then" statements elsif_statement* else_statement? "end" "if" ";"
@@ -33,15 +33,18 @@ ERROR_LEVEL: "error" | "warning"
 
 value: IDENTIFIER | literal | "(" binary_expression ")" | "(" unary_expression ")"
 binary_expression: value BINARY_OPERATOR value
-BINARY_OPERATOR: "and"| "or"| "nand"| "nor"| "xor"
+BINARY_OPERATOR: "and"| "or"| "nand"| "nor"| "xor"| "+"| "-"| "&"
 unary_expression: UNARY_OPERATOR value
 UNARY_OPERATOR: "not"
 
-bvalue: ("b"|"B")? "\"" /[0,1]+/ "\""
-ovalue: ("o"|"O")"\""("0"|"1"|"2"|"3"|"4"|"5"|"6"|"7")*"\""
-xvalue: ("x"|"X") "\"" /[0,1,2,3,4,5,6,7,8,9,a,b,c,,d,e,f]+/ "\""
+BVALUE: ("b"|"B")? "\"" /[0,1]+/ "\""
+OVALUE: ("o"|"O")"\""("0"|"1"|"2"|"3"|"4"|"5"|"6"|"7")*"\""
+XVALUE: ("x"|"X") "\"" /[0,1,2,3,4,5,6,7,8,9,a,b,c,,d,e,f]+/ "\""
+BIT_LITERAL: /[0,1,h,l,u,w,x,z,-]/
+CHARACTER_LITERAL: /'\w'/
 STRING: ESCAPED_STRING
-literal: bvalue|ovalue|xvalue|INT|STRING
+literal: BVALUE|OVALUE|XVALUE|INT|STRING|"'" BIT_LITERAL "'"|CHARACTER_LITERAL
+
 
 COMMENT: "--" /[^\n]*/ "\n"
 %ignore COMMENT

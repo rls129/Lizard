@@ -14,13 +14,13 @@ ENTITY HAlfAdder IS
 END HalfAdder;
 
 ARCHITECTURE addArchitecture1 of HalfAdder IS
-    signal a: std_logic;
-    signal a: std_logic;
-    signal a: std_logic;
+    signal d: std_logic <= 'H';
+    signal e: std_logic;
+    signal f: std_logic <= (a or d);
 BEGIN
-    p1: process(a,b,c) is
-    variable a: i32 := 5;
-    variable b: i32;
+    p1: process(d,e,f) is
+    variable a: std_logic := 'H';
+    variable b: std_logic := 'H';
     begin
         a <= (a and b);
         a := 12;
@@ -28,7 +28,7 @@ BEGIN
         a <= (a and b);
         report "something" severity error;
         wait;
-        a <= (a and b);
+        a <= (a and b"010101");
         report "something" severity error;
     end;
 END;

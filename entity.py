@@ -1,6 +1,7 @@
 from lark import Token, Tree
 from enum import Enum
 from typing import List
+from utils import default_values, cast_map
 import error
 
 class Port:
@@ -8,7 +9,7 @@ class Port:
         self.name = name
         self.dirn = dirn
         self.type = ptype
-
+        self.value = default_values[ptype]
 
 class Entity:
     def __init__(
