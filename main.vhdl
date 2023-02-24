@@ -19,7 +19,7 @@ ARCHITECTURE addArchitecture1 of HalfAdder IS
     signal a: std_logic;
 BEGIN
     p1: process(a,b,c) is
-    variable a: i32;
+    variable a: i32 := 5;
     variable b: i32;
     begin
         a <= (a and b);
