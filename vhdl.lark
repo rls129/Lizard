@@ -9,15 +9,20 @@ port:  IDENTIFIER  ":"  PORTDIRECTION  PORTTYPE
 PORTTYPE: "std_ulogic" | "std_logic"
 PORTDIRECTION: "in" | "out" | "inout" | "direction"
 
-architechture: "architecture"  IDENTIFIER  "of"  IDENTIFIER  "is"  componentdecl*  signaldecl*  archdefination  "end"  "architecture"? IDENTIFIER?  ";"
-
-componentdecl: "component_todo"
-signaldecl: "signal_todo"
+architechture: "architecture"  IDENTIFIER  "of"  IDENTIFIER "is"  archsignal*  archdefination  "end"  "architecture"? IDENTIFIER?  ";"
+archsignal: "signal" IDENTIFIER ":" IDENTIFIER ";"
 
 archdefination: "begin"  (process ";")*
 process: shorthandprocess | longformprocess
-longformprocess: "longformprocess_todo"
-shorthandprocess: IDENTIFIER  "<=" value
+shorthandprocess: IDENTIFIER  "<=" value ";"
+
+longformprocess: IDENTIFIER ":" "process" sensitivity_list? "is" variables* "begin" (shorthandprocess | variable_assignment | wait | report)* "end"
+sensitivity_list: "(" IDENTIFIER ("," IDENTIFIER)* ")"
+variable_assignment: IDENTIFIER  ":=" value ";"
+variables: "variable" IDENTIFIER ":" IDENTIFIER ";"
+wait: (("wait" "for" INT TIME) | "wait") ";"
+report: "report" ESCAPED_STRING "severity" ERROR_LEVEL ";"
+ERROR_LEVEL: "error" | "warning"
 
 value: IDENTIFIER | literal | "(" binary_expression ")" | "(" unary_expression ")"
 binary_expression: value BINARY_OPERATOR value
@@ -39,5 +44,5 @@ COMMENT: "--" /[^\n]*/ "\n"
 %import common.CNAME
 %import common.ESCAPED_STRING
 %import common.INT
-
+TIME: "ns" | "ms" | "us" | "s"
 IDENTIFIER: CNAME
