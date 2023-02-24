@@ -7,6 +7,8 @@ ENTITY HalfAdder IS
     );
 END entity HalfAdder;
 
+-- Mango man
+
 ENTITY HAlfAdder IS
 
 END HalfAdder;
