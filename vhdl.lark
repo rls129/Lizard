@@ -31,6 +31,9 @@ xvalue: ("x"|"X") "\"" /[0,1,2,3,4,5,6,7,8,9,a,b,c,,d,e,f]+/ "\""
 STRING: ESCAPED_STRING
 literal: bvalue|ovalue|xvalue|INT|STRING
 
+COMMENT: "--" /[^\n]*/ "\n"
+%ignore COMMENT
+
 %import common.WS
 %import common.WORD
 %import common.CNAME
