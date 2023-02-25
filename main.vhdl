@@ -1,9 +1,7 @@
 ENTITY HalfAdder IS
     PORT (
           a: IN std_logic;
-          b: IN std_logic;
-          s: OUT std_logic;
-          c: OUT std_logic
+          b: OUT std_logic
     );
 END entity HalfAdder;
 
@@ -14,19 +12,10 @@ END entity HalfAdder;
 -- END HalfAdder;
 
 ARCHITECTURE addArchitecture1 of HalfAdder IS
-    signal d: std_logic <= 'H';
-    signal e: std_logic;
-    signal f: std_logic <= (a or d);
     signal g: integer;
 BEGIN
-    d <= (a or 'H');
-    d <= (a or g);
-    d <= (a or e);
-    a <= (a or e);
-    
     p1: process(d,e,f) is
     variable ad: std_logic := 'H';
-    variable bd: std_logic := 'H';
     begin
         -- ad := ((a  and bd) or (a and b));
         -- a := 'L';
@@ -34,7 +23,14 @@ BEGIN
         -- a <= (a and b);
         -- report "something" severity error;
         -- wait;
-        s <= (ad and b);
-        report "something" severity error;
+        -- s <= (ad and b);
+        if a then
+            s <= (a xor b);
+        elsif a then
+            s <= (a or b);
+        else
+            s <= a;
+        end if;
+        -- report "something" severity error;
     end;
 END;

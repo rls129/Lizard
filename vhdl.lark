@@ -19,11 +19,11 @@ shorthandprocess: IDENTIFIER  "<=" value ";"
 longformprocess: (IDENTIFIER ":")? "process" sensitivity_list? "is" variables* "begin" statements "end" ";"
 statements: statement+
 statement: shorthandprocess | variable_assignment | wait | report | if_statement | while_statement
-if_statement: "if" condition "then" statements elsif_statement* else_statement? "end" "if" ";"
-elsif_statement: "elsif" condition "then" statements
-else_statement: "else" statements
+if_statement: "if" condition "then" statements elsif* else? "end" "if" ";"
+elsif: ("elsif" condition "then" statements)
+else: ("else" statements)
 while_statement: "while" condition "loop" statements "end" "loop" ";"
-!condition: "(" condition ")" | (condition "and" condition) | (condition "or" condition) | ("not" condition) | (value "=" value) | (value "/=" value) // TODO: add more conditions
+!condition: "(" condition ")" | (condition "and" condition) | (condition "or" condition) | ("not" condition) | (value "=" value) | (value "/=" value)| value // TODO: add more conditions
 sensitivity_list: "(" IDENTIFIER ("," IDENTIFIER)* ")"
 variable_assignment: IDENTIFIER  ":=" value ";"
 variables: "variable" IDENTIFIER ":" IDENTIFIER (":=" value)? ";"

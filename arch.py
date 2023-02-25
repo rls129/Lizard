@@ -231,7 +231,7 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
             error.push_error(cur.line, cur.column, f"Type Mismatch {lvalue if lvalue!= None else unrecognized} and {rvalue if rvalue!= None else unrecognized}")
             return None
         statements.append(statement.children[0])
-        pass
+        return True
     elif statement.children[0].data.value == "variable_assignment":
         shprocess = statement.children[0]
         lvalue = get_compile_type(shprocess.children[0],      [], None, symbols, True)
@@ -244,15 +244,31 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
             error.push_error(cur.line, cur.column, f"Type Mismatch {lvalue if lvalue!= None else unrecognized} and {rvalue if rvalue!= None else unrecognized}")
             return None
         statements.append(statement.children[0])
-        pass
+        return True
     elif statement.children[0].data.value == "wait":
         pass
     elif statement.children[0].data.value == "report":
         pass
     elif statement.children[0].data.value == "if_statement":
-        pass
+        ifstatement = statement.children[0]
+        condition = ifstatement.children[0]
+        ifstatements = ifstatement.children[1]
+
+        if len(ifstatement) > 2:
+            elsifstatement = ifstatement.children[2]
+            elsifcond = elsifstatement.children[0]
+            elsifstatements = elsifstatement.children[1]
+
+        if len(ifstatement) > 3:
+            elsestatement = ifstatement.children[3]
+            elsecondn = elsestatement.children[0]
+            elsestatements = elsestatement.children[1]
+
+        print()
+        return True
     elif statement.children[0].data.value == "while_statement":
         pass
+    return None
 
 
 
