@@ -322,7 +322,7 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
             error.push_error(cur.line, cur.column, "Value inside elsif condition is not boolean type.")
             return None
         statements_node = while_statement.children[1]
-        if parse_sts(statements_node, signals, entity, symbols, statements):
+        if parse_sts(statements_node, signals, entity, symbols, statements) is None:
             return None
         pass
     return None
