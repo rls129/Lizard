@@ -145,8 +145,10 @@ def get_compile_value(node, signals: List[Signal], entity: Entity):
             v2, t2 = get_compile_value(value.children[2], signals, entity)
             
             if t1 == t2 or cast_map[t1] == cast_map[t2]: # TODO: Cast Map Maybe??
-                op = value.children[1]
+                op = value.children[1].value
                 result = evaluate(op, v1, v2, t1)
+                if op == '=' or op == '/=':
+                    t1 = 'bool'
                 return result, t1
             else:
                 cur = value
@@ -158,10 +160,14 @@ def get_compile_value(node, signals: List[Signal], entity: Entity):
         pass
     pass
 
-
+def parse_sts(statements_node, signals: List[Signal], entity: Entity, symbols: List[Variable], statements: List[Tree]):
+    for statement in statements_node.children:
+        if parse_st(statement, signals, entity, symbols, statements) is None:
+            return None
+    return True
 
 def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Variable], statements: List[Tree]):
-    def check_valid_symbol(symbol: Token, signals: List[Signal], entity: Entity, p_symbols: List[Variable], lvalue: bool):
+    def check_valid_symbol(symbol: Token, signals: List[Signal], entity: Entity, p_symbols: List[Variable], lvalue: bool, check_direction = False):
         '''
         Only used for evaluation of rvalue in shorthand process
         '''
@@ -172,11 +178,11 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
             for p in entity.ports:
                 if p.name == symbol.value:
                     if lvalue:
-                        if p.dirn == "in":
+                        if p.dirn == "in" and check_direction:
                             error.push_error(symbol.line, symbol.column, f"Can't drive input signal {symbol.value} in a process")
                             return None
                     else:
-                        if  p.dirn == "out":
+                        if  p.dirn == "out" and check_direction:
                             error.push_error(symbol.line, symbol.column, f"Can't feed output signal {symbol.value} to drive a process")
                             return None
                     return p.type
@@ -186,13 +192,13 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
         
         error.push_error(symbol.line, symbol.column, f"Undefined Symbol {symbol.value}")
         return None
-    def get_compile_type(node: Tree, signals: List[Signal], entity: Entity, p_symbols: List[Variable], lvalue: bool):
+    def get_compile_type(node: Tree, signals: List[Signal], entity: Entity, p_symbols: List[Variable], lvalue: bool, check_direction = False):
         '''
         Only used for evaluation of values in shorthand process
         '''
         if isinstance(node, Token):
             if node.type == "IDENTIFIER":
-                return check_valid_symbol(node, signals, entity, p_symbols, lvalue)
+                return check_valid_symbol(node, signals, entity, p_symbols, lvalue, check_direction)
                 
         if isinstance(node, Tree):
             if node.data.value == "literal":
@@ -205,6 +211,9 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
                 
                 if t1 == t2 or cast_map[t1] == cast_map[t2]:
                     # TODO: maybe operation changes type?
+                    op = node.children[1].value
+                    if op == '=' or op == '/=':
+                        return 'bool'
                     return t1
                 else:
                     cur = node
@@ -217,12 +226,35 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
                 pass
             if node.data.value == "value":
                 return get_compile_type(node.children[0], signals, entity, p_symbols, lvalue)
-        
+
+    def get_condition_type(condition, signals, entity, symbols, lvalue):
+        if len(condition.children) == 1:
+            return get_compile_type(condition.children[0], signals, entity, symbols, lvalue)
+        if isinstance(condition.children[0], Tree) and condition.children[0].data.value == "value":
+            t1 = get_compile_type(condition.children[0], signals, entity, symbols, lvalue)
+            t2 = get_compile_type(condition.children[2], signals, entity, symbols, lvalue)
+            
+            if t1 == t2 or cast_map[t1] == cast_map[t2]:
+                return 'bool'
+            else:
+                cur = condition
+                while isinstance(cur, Tree):
+                    cur = cur.children[0]
+                error.push_error(cur.line, cur.column, f"Type Mismatch {t1} and {t2}")
+                return None
+
+        for child in condition.children:
+            if not isinstance(child, Tree):
+                continue
+            if child.data.value == "condition":
+                if get_condition_type(child, signals, entity, symbols, lvalue)!='bool':
+                    return None
+        return 'bool'
 
     if statement.children[0].data.value == "shorthandprocess":
         shprocess = statement.children[0]
-        lvalue = get_compile_type(shprocess.children[0], signals, entity,      [], True)
-        rvalue = get_compile_type(shprocess.children[1], signals, entity, symbols, False)
+        lvalue = get_compile_type(shprocess.children[0], signals, entity,      [], True, True)
+        rvalue = get_compile_type(shprocess.children[1], signals, entity, symbols, False, True)
         if cast_map[lvalue] != cast_map[rvalue] or lvalue == None or rvalue == None:
             cur = shprocess
             while isinstance(cur, Tree):
@@ -234,8 +266,8 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
         return True
     elif statement.children[0].data.value == "variable_assignment":
         shprocess = statement.children[0]
-        lvalue = get_compile_type(shprocess.children[0],      [], None, symbols, True)
-        rvalue = get_compile_type(shprocess.children[1], signals, entity, symbols, False)
+        lvalue = get_compile_type(shprocess.children[0],      [], None, symbols, True, True)
+        rvalue = get_compile_type(shprocess.children[1], signals, entity, symbols, False, True)
         if cast_map[lvalue] != cast_map[rvalue] or lvalue == None or rvalue == None:
             cur = shprocess
             while isinstance(cur, Tree):
@@ -252,21 +284,46 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
     elif statement.children[0].data.value == "if_statement":
         ifstatement = statement.children[0]
         condition = ifstatement.children[0]
+        condition_type = get_condition_type(condition, signals, entity, symbols, False)
+        if condition_type != "bool":
+            cur = ifstatement
+            while isinstance(cur, Tree):
+                cur = cur.children[0]
+            error.push_error(cur.line, cur.column, "Value inside if condition is not boolean type.")
+            return None
         ifstatements = ifstatement.children[1]
-
-        if len(ifstatement) > 2:
-            elsifstatement = ifstatement.children[2]
-            elsifcond = elsifstatement.children[0]
-            elsifstatements = elsifstatement.children[1]
-
-        if len(ifstatement) > 3:
-            elsestatement = ifstatement.children[3]
-            elsecondn = elsestatement.children[0]
-            elsestatements = elsestatement.children[1]
+        if parse_sts(ifstatements, signals, entity, symbols, statements) is None:
+            return None
+        for i in range(2, len(ifstatement.children)):
+            child = ifstatement.children[i]
+            if child.children[0].data.value == "condition":
+                condition = child.children[0]
+                condition_type = get_condition_type(condition, signals, entity, symbols, False)
+                if condition_type != "bool":
+                    cur = child
+                    while isinstance(cur, Tree):
+                        cur = cur.children[0]
+                    error.push_error(cur.line, cur.column, "Value inside elsif condition is not boolean type.")
+                    return None
+            elstatements = child.children[-1]
+            if parse_sts(elstatements, signals, entity, symbols, statements) is None:
+                return None
 
         print()
         return True
     elif statement.children[0].data.value == "while_statement":
+        while_statement = statement.children[0]
+        condition = while_statement.children[0]
+        condition_type = get_condition_type(condition, signals, entity, symbols, False)
+        if condition_type != "bool":
+            cur = child
+            while isinstance(cur, Tree):
+                cur = cur.children[0]
+            error.push_error(cur.line, cur.column, "Value inside elsif condition is not boolean type.")
+            return None
+        statements_node = while_statement.children[1]
+        if parse_sts(statements_node, signals, entity, symbols, statements):
+            return None
         pass
     return None
 

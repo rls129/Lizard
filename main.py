@@ -12,8 +12,9 @@ def main():
     entities = get_entites(ast)
     # testbench_intit
     print_entities(entities)
-    print(error.errno)
     architectures = get_architecture(ast, entities)
+    for err in error.errno:
+        print (err.line, err.msg)
     print()
     # testbench_itr
 

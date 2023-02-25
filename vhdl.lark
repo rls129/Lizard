@@ -23,6 +23,7 @@ if_statement: "if" condition "then" statements elsif* else? "end" "if" ";"
 elsif: ("elsif" condition "then" statements)
 else: ("else" statements)
 while_statement: "while" condition "loop" statements "end" "loop" ";"
+// condition: value | "(" value ")"
 !condition: "(" condition ")" | (condition "and" condition) | (condition "or" condition) | ("not" condition) | (value "=" value) | (value "/=" value)| value // TODO: add more conditions
 sensitivity_list: "(" IDENTIFIER ("," IDENTIFIER)* ")"
 variable_assignment: IDENTIFIER  ":=" value ";"
@@ -31,9 +32,9 @@ wait: (("wait" "for" INT TIME) | "wait") ";"
 report: "report" ESCAPED_STRING "severity" ERROR_LEVEL ";"
 ERROR_LEVEL: "error" | "warning"
 
-value: IDENTIFIER | literal | "(" binary_expression ")" | "(" unary_expression ")"
+value: IDENTIFIER | literal | "(" value ")" | binary_expression | unary_expression
 binary_expression: value BINARY_OPERATOR value
-BINARY_OPERATOR: "and"| "or"| "nand"| "nor"| "xor"| "+"| "-"| "&"
+BINARY_OPERATOR: "and"| "or"| "nand"| "nor"| "xor"| "+"| "-"| "&" | "=" | "/="
 unary_expression: UNARY_OPERATOR value
 UNARY_OPERATOR: "not"
 

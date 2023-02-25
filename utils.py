@@ -28,6 +28,8 @@ cast_map = {
     "integer": "integer",
     "STRING" : "STRING",
     "CHARACTER_LITERAL": "CHARACTER_LITERAL",
+    "bool" : "bool",
+    "INT" : "INT",
 
     None: None
 
