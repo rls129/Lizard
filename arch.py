@@ -158,6 +158,107 @@ def get_compile_value(node, signals: List[Signal], entity: Entity):
         pass
     pass
 
+
+
+def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Variable], statements: List[Tree]):
+    def check_valid_symbol(symbol: Token, signals: List[Signal], entity: Entity, p_symbols: List[Variable], lvalue: bool):
+        '''
+        Only used for evaluation of rvalue in shorthand process
+        '''
+        for s in signals:
+            if s.name == symbol.value:
+                return s.type
+        if entity is not None:
+            for p in entity.ports:
+                if p.name == symbol.value:
+                    if lvalue:
+                        if p.dirn == "in":
+                            error.push_error(symbol.line, symbol.column, f"Can't drive input signal {symbol.value} in a process")
+                            return None
+                    else:
+                        if  p.dirn == "out":
+                            error.push_error(symbol.line, symbol.column, f"Can't feed output signal {symbol.value} to drive a process")
+                            return None
+                    return p.type
+        for psym in p_symbols:
+            if psym.name == symbol.value:
+                return psym.type
+        
+        error.push_error(symbol.line, symbol.column, f"Undefined Symbol {symbol.value}")
+        return None
+    def get_compile_type(node: Tree, signals: List[Signal], entity: Entity, p_symbols: List[Variable], lvalue: bool):
+        '''
+        Only used for evaluation of values in shorthand process
+        '''
+        if isinstance(node, Token):
+            if node.type == "IDENTIFIER":
+                return check_valid_symbol(node, signals, entity, p_symbols, lvalue)
+                
+        if isinstance(node, Tree):
+            if node.data.value == "literal":
+                literal = node.children[0]
+                return literal.type
+
+            if node.data.value == "binary_expression":
+                t1 = get_compile_type(node.children[0], signals, entity, p_symbols, lvalue)
+                t2 = get_compile_type(node.children[2], signals, entity, p_symbols, lvalue)
+                
+                if t1 == t2 or cast_map[t1] == cast_map[t2]:
+                    # TODO: maybe operation changes type?
+                    return t1
+                else:
+                    cur = node
+                    while isinstance(cur, Tree):
+                        cur = cur.children[0]
+                    error.push_error(cur.line, cur.column, f"Type Mismatch {t1} and {t2}")
+                    return None
+            if node.data.value == "unary_expression":
+                # TODO
+                pass
+            if node.data.value == "value":
+                return get_compile_type(node.children[0], signals, entity, p_symbols, lvalue)
+        
+
+    if statement.children[0].data.value == "shorthandprocess":
+        shprocess = statement.children[0]
+        lvalue = get_compile_type(shprocess.children[0], signals, entity,      [], True)
+        rvalue = get_compile_type(shprocess.children[1], signals, entity, symbols, False)
+        if cast_map[lvalue] != cast_map[rvalue] or lvalue == None or rvalue == None:
+            cur = shprocess
+            while isinstance(cur, Tree):
+                cur = cur.children[0]
+            unrecognized = "Unrecognized Type"
+            error.push_error(cur.line, cur.column, f"Type Mismatch {lvalue if lvalue!= None else unrecognized} and {rvalue if rvalue!= None else unrecognized}")
+            return None
+        statements.append(statement.children[0])
+        pass
+    elif statement.children[0].data.value == "variable_assignment":
+        shprocess = statement.children[0]
+        lvalue = get_compile_type(shprocess.children[0],      [], None, symbols, True)
+        rvalue = get_compile_type(shprocess.children[1], signals, entity, symbols, False)
+        if cast_map[lvalue] != cast_map[rvalue] or lvalue == None or rvalue == None:
+            cur = shprocess
+            while isinstance(cur, Tree):
+                cur = cur.children[0]
+            unrecognized = "Unrecognized Type"
+            error.push_error(cur.line, cur.column, f"Type Mismatch {lvalue if lvalue!= None else unrecognized} and {rvalue if rvalue!= None else unrecognized}")
+            return None
+        statements.append(statement.children[0])
+        pass
+    elif statement.children[0].data.value == "wait":
+        pass
+    elif statement.children[0].data.value == "report":
+        pass
+    elif statement.children[0].data.value == "if_statement":
+        pass
+    elif statement.children[0].data.value == "while_statement":
+        pass
+
+
+
+
+
+
 def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|None:
     architectures: List[Architecture] = []
     def get_arch_name(node):
@@ -358,99 +459,8 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
                     if token.data.value == "statements":
                         for statement in token.children:
                             if isinstance(statement, Tree):
-                                def check_valid_symbol(symbol: Token, signals: List[Signal], entity: Entity, p_symbols: List[Variable], lvalue: bool):
-                                    '''
-                                    Only used for evaluation of rvalue in shorthand process
-                                    '''
-                                    for s in signals:
-                                        if s.name == symbol.value:
-                                            return s.type
-                                    if entity is not None:
-                                        for p in entity.ports:
-                                            if p.name == symbol.value:
-                                                if lvalue:
-                                                    if p.dirn == "in":
-                                                        error.push_error(symbol.line, symbol.column, f"Can't drive input signal {symbol.value} in a process")
-                                                        return None
-                                                else:
-                                                    if  p.dirn == "out":
-                                                        error.push_error(symbol.line, symbol.column, f"Can't feed output signal {symbol.value} to drive a process")
-                                                        return None
-                                                return p.type
-                                    for psym in p_symbols:
-                                        if psym.name == symbol.value:
-                                            return psym.type
-                                    
-                                    error.push_error(symbol.line, symbol.column, f"Undefined Symbol {symbol.value}")
-                                    return None
-
-                                def get_compile_type(node: Tree, signals: List[Signal], entity: Entity, p_symbols: List[Variable], lvalue: bool):
-                                    '''
-                                    Only used for evaluation of values in shorthand process
-                                    '''
-                                    if isinstance(node, Token):
-                                        if node.type == "IDENTIFIER":
-                                            return check_valid_symbol(node, signals, entity, p_symbols, lvalue)
-                                            
-                                    if isinstance(node, Tree):
-                                        if node.data.value == "literal":
-                                            literal = node.children[0]
-                                            return literal.type
-
-                                        if node.data.value == "binary_expression":
-                                            t1 = get_compile_type(node.children[0], signals, entity, p_symbols, lvalue)
-                                            t2 = get_compile_type(node.children[2], signals, entity, p_symbols, lvalue)
-                                            
-                                            if t1 == t2 or cast_map[t1] == cast_map[t2]:
-                                                # TODO: maybe operation changes type?
-                                                return t1
-                                            else:
-                                                cur = node
-                                                while isinstance(cur, Tree):
-                                                    cur = cur.children[0]
-                                                error.push_error(cur.line, cur.column, f"Type Mismatch {t1} and {t2}")
-                                                return None
-                                        if node.data.value == "unary_expression":
-                                            # TODO
-                                            pass
-                                        if node.data.value == "value":
-                                            return get_compile_type(node.children[0], signals, entity, p_symbols, lvalue)
-                                    
-
-                                if statement.children[0].data.value == "shorthandprocess":
-                                    shprocess = statement.children[0]
-                                    lvalue = get_compile_type(shprocess.children[0], signals, entity,      [], True)
-                                    rvalue = get_compile_type(shprocess.children[1], signals, entity, symbols, False)
-                                    if cast_map[lvalue] != cast_map[rvalue] or lvalue == None or rvalue == None:
-                                        cur = shprocess
-                                        while isinstance(cur, Tree):
-                                            cur = cur.children[0]
-                                        unrecognized = "Unrecognized Type"
-                                        error.push_error(cur.line, cur.column, f"Type Mismatch {lvalue if lvalue!= None else unrecognized} and {rvalue if rvalue!= None else unrecognized}")
-                                        continue
-                                    statements.append(statement.children[0])
-                                    pass
-                                elif statement.children[0].data.value == "variable_assignment":
-                                    shprocess = statement.children[0]
-                                    lvalue = get_compile_type(shprocess.children[0],      [], None, symbols, True)
-                                    rvalue = get_compile_type(shprocess.children[1], signals, entity, symbols, False)
-                                    if cast_map[lvalue] != cast_map[rvalue] or lvalue == None or rvalue == None:
-                                        cur = shprocess
-                                        while isinstance(cur, Tree):
-                                            cur = cur.children[0]
-                                        unrecognized = "Unrecognized Type"
-                                        error.push_error(cur.line, cur.column, f"Type Mismatch {lvalue if lvalue!= None else unrecognized} and {rvalue if rvalue!= None else unrecognized}")
-                                        continue
-                                    statements.append(statement.children[0])
-                                    pass
-                                elif statement.children[0].data.value == "wait":
-                                    pass
-                                elif statement.children[0].data.value == "report":
-                                    pass
-                                elif statement.children[0].data.value == "if_statement":
-                                    pass
-                                elif statement.children[0].data.value == "while_statement":
-                                    pass
+                                if parse_st(statement, signals, entity,symbols, statements) is None:
+                                    continue
                         pass
 
             return Process(pname, statements, sensitivity_list, symbols)
