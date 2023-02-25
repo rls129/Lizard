@@ -19,16 +19,16 @@ ARCHITECTURE addArchitecture1 of HalfAdder IS
     signal f: std_logic <= (a or d);
 BEGIN
     p1: process(d,e,f) is
-    variable a: std_logic := 'H';
-    variable b: std_logic := 'H';
+    variable ad: std_logic := 'H';
+    variable bd: std_logic := 'H';
     begin
+        c <= ((a and b) or (a and b));
+        -- a := 12;
+        -- wait; 
+        -- a <= (a and b);
+        -- report "something" severity error;
+        -- wait;
         a <= (a and b);
-        a := 12;
-        wait; 
-        a <= (a and b);
-        report "something" severity error;
-        wait;
-        a <= (a and b"010101");
         report "something" severity error;
     end;
 END;

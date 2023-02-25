@@ -14,7 +14,7 @@ default_values = {
             "std_logic": 'u',
             "std_ulogic": 'u',
             "integer": 0,
-            "boolean": "false"
+            "boolean": "false",
             # TODO more default values
         }
 
@@ -22,5 +22,12 @@ cast_map = {
     "std_ulogic": "BIT_LITERAL",
     "std_logic" : "BIT_LITERAL" ,
     "BIT_LITERAL" :  "BIT_LITERAL",
+    "BVALUE": "BVALUE",
+    "OVALUE": "OVALUE",
+    "XVALUE": "XVALUE",
+    "INT": "INT",
+    "STRING" : "STRING",
+    "CHARACTER_LITERAL": "CHARACTER_LITERAL",
+    None: None
 
 }
