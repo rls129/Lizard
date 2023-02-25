@@ -9,9 +9,9 @@ END entity HalfAdder;
 
 -- Mango man
 
-ENTITY HAlfAdder IS
+-- ENTITY HAlfAdder IS
 
-END HalfAdder;
+-- END HalfAdder;
 
 ARCHITECTURE addArchitecture1 of HalfAdder IS
     signal d: std_logic <= 'H';
@@ -28,13 +28,13 @@ BEGIN
     variable ad: std_logic := 'H';
     variable bd: std_logic := 'H';
     begin
-        c <= ((a and bd) or (a and b));
-        -- a := 12;
+        -- ad := ((a  and bd) or (a and b));
+        -- a := 'L';
         -- wait; 
         -- a <= (a and b);
         -- report "something" severity error;
         -- wait;
-        a <= (a and b);
+        s <= (ad and b);
         report "something" severity error;
     end;
 END;
