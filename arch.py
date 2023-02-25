@@ -224,8 +224,82 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
         processes = []
         
         def get_shorthandprocess(sprocess: Tree) -> Process:
-            lvalue = sprocess.children[0].value
-            pass
+            print()
+            pname = "Anon"
+            senitivity_list = []
+            statements = [] # len == 1 or 0
+            symbols = [] # always none
+
+            def get_type(node: Tree|Token, lvalue: bool):
+                if lvalue:
+                    for s in signals:
+                        if s.name == node.value:
+                            return s.type
+                    for p in entity.ports:
+                        if p.name == node.value:
+                            if lvalue and p.dirn == "out":
+                                error.push_error(node.line, node.column, f"cannot read from an outport {node.value}")
+                                return None
+                            return p.type
+                        error.push_error(node.line, node.column, f"no such symbol available {node.value}")
+                        return None
+                if not lvalue:
+                    # node is of type value
+                    node = node.children[0]
+                    if isinstance(node, Tree):
+                        if node.data.value == "binary_expression":
+                            v1 = get_type(node.children[0], False)
+                            v2 = get_type(node.children[2], False)
+                            if v1 == None or v2 == None:
+                                error.push_error(node.children[1].line, node.children[1].column, f"Type Mismatch or Bad Type {v1} {v2}")
+                                return None
+                            if v1 == v2 or cast_map[v1] == cast_map[v2]:
+                                return v1
+                            else:
+                                error.push_error(node.children[1].line, node.children[1].column, f"Type Mismatch {v1} {v2}")
+                                return None
+                        if node.data.value == "literal":
+                            return node.children[0].type
+                    if isinstance(node, Token):
+                        if node.type == "IDENTIFIER":
+                            for s in signals:
+                                if s.name == node.value:
+                                    return s.type
+                            for p in entity.ports:
+                                if p.name == node.value:
+                                    if p.dirn == "out":
+                                        error.push_error(node.line, node.column, f"cannot read from an outport {node.value}")
+                                        return None
+                                    return p.type
+                            error.push_error(node.line, node.column, f"no such symbol available {node.value}")
+                            return None
+            
+            def get_sensitivity_list(node: Tree|Token):
+                node = node.children[0] # node is of type value
+                if isinstance(node, Tree):
+                    if node.data.value == "binary_expression":
+                        v1 = get_sensitivity_list(node.children[0])
+                        v2 = get_sensitivity_list(node.children[2])
+                    if node.data.value == "literal":
+                        pass
+                if isinstance(node, Token):
+                    if node.type == "IDENTIFIER":
+                        for s in signals:
+                            if s.name == node.value:
+                                senitivity_list.append(s)
+                        for s in entity.ports:
+                            if s.name == node.value:
+                                senitivity_list.append(s)
+
+            lvalue = get_type(sprocess.children[0], True)
+            rvalue = get_type(sprocess.children[1], False)
+            if lvalue != rvalue and cast_map[lvalue] != cast_map[rvalue]:
+                error.push_error(sprocess.children[0].line, sprocess.children[0].column, f"Type Mismatch {lvalue} {rvalue}")
+        
+            get_sensitivity_list(sprocess.children[1])
+            statements.append(sprocess)
+
+            return Process(pname, statements, senitivity_list, symbols)
 
         def get_longformprocess(lprocess: Tree, entity: Entity, signals: List[Signal]) -> Process:
             pname = None
@@ -375,10 +449,14 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
                     for process in child.children:
                         if process.children[0].data.value == "shorthandprocess":
                             shorthandprocess = process.children[0]
-                            processes.append(get_shorthandprocess(shorthandprocess))
+                            r = get_shorthandprocess(shorthandprocess)
+                            if r is not None:
+                                processes.append(r)
                         elif process.children[0].data.value == "longformprocess":
                             lfprocess = process.children[0]
-                            processes.append(get_longformprocess(lfprocess, entity, signals))       
+                            r = get_longformprocess(lfprocess, entity, signals)
+                            if not None:
+                                processes.append(r)       
             
         return processes
 

@@ -25,9 +25,10 @@ cast_map = {
     "BVALUE": "BVALUE",
     "OVALUE": "OVALUE",
     "XVALUE": "XVALUE",
-    "INT": "INT",
+    "integer": "integer",
     "STRING" : "STRING",
     "CHARACTER_LITERAL": "CHARACTER_LITERAL",
+
     None: None
 
 }
