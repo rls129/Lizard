@@ -262,7 +262,6 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
             unrecognized = "Unrecognized Type"
             error.push_error(cur.line, cur.column, f"Type Mismatch {lvalue if lvalue!= None else unrecognized} and {rvalue if rvalue!= None else unrecognized}")
             return None
-        statements.append(statement.children[0])
         return True
     elif statement.children[0].data.value == "variable_assignment":
         shprocess = statement.children[0]
@@ -275,7 +274,6 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
             unrecognized = "Unrecognized Type"
             error.push_error(cur.line, cur.column, f"Type Mismatch {lvalue if lvalue!= None else unrecognized} and {rvalue if rvalue!= None else unrecognized}")
             return None
-        statements.append(statement.children[0])
         return True
     elif statement.children[0].data.value == "wait":
         pass
@@ -411,12 +409,12 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
                             return s.type
                     for p in entity.ports:
                         if p.name == node.value:
-                            if lvalue and p.dirn == "out":
+                            if lvalue and p.dirn == "in":
                                 error.push_error(node.line, node.column, f"cannot read from an outport {node.value}")
                                 return None
                             return p.type
-                        error.push_error(node.line, node.column, f"no such symbol available {node.value}")
-                        return None
+                    error.push_error(node.line, node.column, f"no such symbol available {node.value}")
+                    return None
                 if not lvalue:
                     # node is of type value
                     node = node.children[0]
@@ -434,6 +432,8 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
                                 return None
                         if node.data.value == "literal":
                             return node.children[0].type
+                        if node.data.value == "value":
+                            return get_type(node, lvalue)
                     if isinstance(node, Token):
                         if node.type == "IDENTIFIER":
                             for s in signals:
@@ -531,6 +531,7 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
                         
                     if token.data.value == "statements":
                         for statement in token.children:
+                            statements.append(statement.children[0])
                             if isinstance(statement, Tree):
                                 if parse_st(statement, signals, entity,symbols, statements) is None:
                                     continue
