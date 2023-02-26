@@ -64,6 +64,7 @@ def get_ports(entity: Tree):
 
 def print_entities(ent: List[Entity]):
     for i in ent:
-        print(i.name)
+        print(f"Entity - {i.name}")
+        print("\tSignals:")
         for ii in i.ports:
-            print(ii.type, ii.dirn, ii.name)
+            print("\t\t", ii.type, ii.dirn, ii.name)
