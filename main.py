@@ -8,13 +8,14 @@ import error
 
 def main():
     ast: Tree = parse("vhdl.lark", "main.vhdl")
-    print(ast.pretty())
+    # print(ast.pretty())
     entities = get_entites(ast)
     # testbench_intit
     print_entities(entities)
     architectures = get_architecture(ast, entities)
+    print_architecture(architectures)
     for err in error.errno:
-        print (err.line, err.msg)
+        print (err.line, err.col, err.msg)
     print()
     # testbench_itr
 

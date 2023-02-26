@@ -456,14 +456,18 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
                         v2 = get_sensitivity_list(node.children[2])
                     if node.data.value == "literal":
                         pass
+                    if node.data.value == "value":
+                        get_sensitivity_list(node)
                 if isinstance(node, Token):
                     if node.type == "IDENTIFIER":
                         for s in signals:
                             if s.name == node.value:
-                                senitivity_list.append(s)
+                                if s not in senitivity_list:
+                                    senitivity_list.append(s)
                         for s in entity.ports:
                             if s.name == node.value:
-                                senitivity_list.append(s)
+                                if s not in senitivity_list:
+                                    senitivity_list.append(s)
 
             lvalue = get_type(sprocess.children[0], True)
             rvalue = get_type(sprocess.children[1], False)
@@ -578,5 +582,14 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
 
     return architectures
 
-def print_architecture(arch: List[Architecture]):
-    pass
+def print_architecture(archs: List[Architecture]):
+    for arch in archs:
+        print(f"Architecture - {arch.name}")
+        print(f"\tEntity - {arch.entity.name}")
+        print("\tSignals")
+        for s in arch.signals:
+            print(f"\t\t{s.name} {s.type}")
+        print("\tProcesses")
+        for p in arch.processes:
+            print(f"\t\t{p.name}:", end="")
+            print(f" Sensitivity List {[n.name for n in p.sensitivity_list]}")
