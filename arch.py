@@ -21,9 +21,11 @@
 #     sensitivity_list: &Signal[]
 # }
 
-from entity import Entity
 from lark import Tree, Token
-from typing import List, Any
+from copy import deepcopy
+from typing import List, Any, Optional
+
+from entity import Entity
 from utils import default_values, cast_map
 import error
 
@@ -41,10 +43,17 @@ class Variable:
         self.type = vhdl_type
         self.value = value
 
+class Statements:
+    def __init__(self, stmts: List[Tree]):
+        self.statements = stmts
+        self.pc = 0
+
+    def __getitem__(self, i):
+        return self.statements[i]
 class Process:
-    def __init__(self, n: str, nodes: List[Tree], signals: List[Signal], symbols: List[Variable]):
+    def __init__(self, n: str, sts: Statements, signals: List[Signal], symbols: List[Variable]):
         self.name: str = n
-        self.statements: List[Tree] = nodes # shotahand len == 1; longform len > 1
+        self.statements: Statements = sts # shotahand len == 1; longform len > 1
         self.sensitivity_list: List[Signal] = signals
         self.symbol_table = symbols
 
@@ -52,7 +61,7 @@ class Process:
 class Architecture:
     def __init__(self, name: str, e: Entity, s: List[Signal], p: List[Process]):
         self.name: str = name
-        self.entity: Entity = e
+        self.entity: Entity = deepcopy(e) #Each architecture has its own copy of entity when fabricated
         self.signals: List[Signal] = s
         self.miscellaneous: List[Any] = []
         self.processes: List[Process] = p
@@ -161,13 +170,14 @@ def get_compile_value(node, signals: List[Signal], entity: Entity):
     pass
 
 def parse_sts(statements_node, signals: List[Signal], entity: Entity, symbols: List[Variable], statements: List[Tree]):
+    success_flag = True
     for statement in statements_node.children:
         if parse_st(statement, signals, entity, symbols, statements) is None:
-            return None
-    return True
+            success_flag = None
+    return success_flag
 
 def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Variable], statements: List[Tree]):
-    def check_valid_symbol(symbol: Token, signals: List[Signal], entity: Entity, p_symbols: List[Variable], lvalue: bool, check_direction = False):
+    def check_valid_symbol(symbol: Token, signals: List[Signal], entity: Optional[Entity], p_symbols: List[Variable], lvalue: bool, check_direction = False):
         '''
         Only used for evaluation of rvalue in shorthand process
         '''
@@ -192,7 +202,7 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
         
         error.push_error(symbol.line, symbol.column, f"Undefined Symbol {symbol.value}")
         return None
-    def get_compile_type(node: Tree, signals: List[Signal], entity: Entity, p_symbols: List[Variable], lvalue: bool, check_direction = False):
+    def get_compile_type(node: Tree, signals: List[Signal], entity: Optional[Entity], p_symbols: List[Variable], lvalue: bool, check_direction = False):
         '''
         Only used for evaluation of values in shorthand process
         '''
@@ -276,9 +286,12 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
             return None
         return True
     elif statement.children[0].data.value == "wait":
-        pass
+        # print()
+        # TODO: Implement it
+        return True
     elif statement.children[0].data.value == "report":
-        pass
+        # TODO: Implement it
+        return True
     elif statement.children[0].data.value == "if_statement":
         ifstatement = statement.children[0]
         condition = ifstatement.children[0]
@@ -307,14 +320,14 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
             if parse_sts(elstatements, signals, entity, symbols, statements) is None:
                 return None
 
-        print()
+        # print()
         return True
     elif statement.children[0].data.value == "while_statement":
         while_statement = statement.children[0]
         condition = while_statement.children[0]
         condition_type = get_condition_type(condition, signals, entity, symbols, False)
         if condition_type != "bool":
-            cur = child
+            cur = while_statement
             while isinstance(cur, Tree):
                 cur = cur.children[0]
             error.push_error(cur.line, cur.column, "Value inside elsif condition is not boolean type.")
@@ -330,7 +343,7 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
 
 
 
-def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|None:
+def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]:
     architectures: List[Architecture] = []
     def get_arch_name(node):
         name = node.children[0].value
@@ -347,7 +360,7 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
         error.push_error(entity.line, entity.column, f"No Entity named {entity.value}")
         return None
     
-    def get_arch_signal(node: Tree, entity: Entity) -> List[Signal]|None:
+    def get_arch_signal(node: Tree, entity: Entity) -> List[Signal]:
         signals: List[Signal] = []
 
         for child in node.children:
@@ -391,12 +404,12 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
         return signals
 
 
-    def get_arch_processes(node, entity: Entity, signals: List[Signal]) -> List[Process]|None:
-        print()
+    def get_arch_processes(node, entity: Entity, signals: List[Signal]) -> List[Process]:
+        # print()
         processes = []
         
         def get_shorthandprocess(sprocess: Tree) -> Process:
-            print()
+            # print()
             pname = "Anon"
             senitivity_list = []
             statements = [] # len == 1 or 0
@@ -475,11 +488,11 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
                 error.push_error(sprocess.children[0].line, sprocess.children[0].column, f"Type Mismatch {lvalue} {rvalue}")
         
             get_sensitivity_list(sprocess.children[1])
-            statements.append(sprocess)
+            statements.append(deepcopy(sprocess))
 
-            return Process(pname, statements, senitivity_list, symbols)
+            return Process(pname, Statements(statements), senitivity_list, symbols) # TODO: Remove pc addition to shorthand processes
 
-        def get_longformprocess(lprocess: Tree, entity: Entity, signals: List[Signal]) -> Process:
+        def get_longformprocess(lfprocess: Tree, entity: Entity, signals: List[Signal]) -> Process:
             pname = None
             sensitivity_list = []
             statements = []
@@ -535,13 +548,23 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]|No
                         
                     if token.data.value == "statements":
                         for statement in token.children:
-                            statements.append(statement.children[0])
+                            def update_statements_type(st: Tree):
+                                for iter, i_st in enumerate(st.children):
+                                    if (isinstance(i_st, Tree)):
+                                        if i_st.data.value == "statements":
+                                            st.children[iter] = Statements(i_st)
+                                        update_statements_type(i_st)
+                                        
+                                            
                             if isinstance(statement, Tree):
                                 if parse_st(statement, signals, entity,symbols, statements) is None:
                                     continue
+                            push_ready_statement = deepcopy(statement.children[0]) # To avoid references and/or edits to ast 
+                            update_statements_type(push_ready_statement)
+                            statements.append(push_ready_statement)
                         pass
 
-            return Process(pname, statements, sensitivity_list, symbols)
+            return Process(pname, Statements(statements), sensitivity_list, symbols)  
 
         for child in node.children:
             if isinstance(child, Tree):
