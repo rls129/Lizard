@@ -100,12 +100,12 @@ def run_simulation(exec_time: float, architectures: List[Architecture]):
                     if queue_time is not None:
                             arch.waiting_process.append((process[0], queue_time))
 
-                    for sig in arch.signals_changed:
-                        sig.value = sig.future_buffer if sig.future_buffer is not None else sig.value
-                        for pr in sig.linked_process:
-                            execute_process(pr, arch, False) # Guaranteed to be inactive (aka sensitivity list)
-                    # arch.signals_changed.remove(sig) #should be removed once done with, but fucks up iterator so
-                    arch.signals_changed.clear()
+            for sig in arch.signals_changed:
+                sig.value = sig.future_buffer if sig.future_buffer is not None else sig.value
+                for pr in sig.linked_process:
+                    execute_process(pr, arch, False) # Guaranteed to be inactive (aka sensitivity list)
+            # arch.signals_changed.remove(sig) #should be removed once done with, but fucks up iterator so
+            arch.signals_changed.clear()
 
 
         simulation.perform_jump(architectures)
