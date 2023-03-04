@@ -14,16 +14,16 @@ END entity HalfAdder;
 ARCHITECTURE addArchitecture1 of HalfAdder IS
     signal g: std_logic;
 BEGIN
-    b <= (a xor a);
+    b <= ((a) xor a);
     p1: process(a, b) is
-    variable ad: std_logic := 'H';
+    variable ad: std_logic := ('H');
     begin
         -- ad := ((a  and bd) or (a and b));
         -- a := 'L';
         -- wait; 
         -- a <= (a and b);
         -- report "something" severity error;
-        wait;
+        wait for 10 ms;
         b <= (a xor a);
 
         if(a = '0') then

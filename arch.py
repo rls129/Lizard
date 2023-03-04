@@ -23,9 +23,9 @@
 
 from lark import Tree, Token
 from copy import deepcopy
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Tuple
 
-from entity import Entity
+from entity import Entity, Port
 from utils import default_values, cast_map
 import error
 
@@ -35,6 +35,7 @@ class Signal:
         self.type: str = vtype
         self.value: str = value # TODO: for first iteration, set future value instead of this?
         self.future_buffer: str = 'None'
+        self.linked_process: List[Process] = []
 
 
 class Variable:
@@ -51,9 +52,9 @@ class Statements:
     def __getitem__(self, i):
         return self.statements[i]
 class Process:
-    def __init__(self, n: str, sts: Statements, signals: List[Signal], symbols: List[Variable]):
+    def __init__(self, n: str, sts: Statements | List[Tree], signals: List[Signal], symbols: List[Variable]):
         self.name: str = n
-        self.statements: Statements = sts # shotahand len == 1; longform len > 1
+        self.statements = sts # shotahand len == 1; longform len > 1
         self.sensitivity_list: List[Signal] = signals
         self.symbol_table = symbols
 
@@ -65,6 +66,15 @@ class Architecture:
         self.signals: List[Signal] = s
         self.miscellaneous: List[Any] = []
         self.processes: List[Process] = p
+        self.signals_changed: List[Signal | Port] = []
+        self.waiting_process  : List[Tuple[Process, float]] = []  # For processes encountering waits
+        self.inactive_process : List[Process] = []  # For processes with sensitivity list
+        # for port in self.entity.ports:
+        #     self.signals_changed.append(port)
+        # for signal in self.signals:
+        #     self.signals_changed.append(signal)
+        # for proc in self.processes:
+        #     self.waiting_process.append((proc, 0.))
 
 def get_compile_value(node, signals: List[Signal], entity: Entity):
     '''
@@ -145,6 +155,8 @@ def get_compile_value(node, signals: List[Signal], entity: Entity):
                         return None, None
                     return p.value, p.type
     if isinstance(value, Tree):
+        if value.data.value == "value":
+            return get_compile_value(value, signals, entity)
         if value.data.value == "literal":
             literal = value.children[0]
             return literal.value, literal.type
@@ -286,7 +298,6 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
             return None
         return True
     elif statement.children[0].data.value == "wait":
-        # print()
         # TODO: Implement it
         return True
     elif statement.children[0].data.value == "report":
@@ -490,7 +501,7 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]:
             get_sensitivity_list(sprocess.children[1])
             statements.append(deepcopy(sprocess))
 
-            return Process(pname, Statements(statements), senitivity_list, symbols) # TODO: Remove pc addition to shorthand processes
+            return Process(pname, statements, senitivity_list, symbols) # TODO: Remove pc addition to shorthand processes
 
         def get_longformprocess(lfprocess: Tree, entity: Entity, signals: List[Signal]) -> Process:
             pname = None
@@ -600,7 +611,11 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]:
                     continue
 
             signals   = get_arch_signal(node, entity)            
+            
             processes = get_arch_processes(node, entity, signals)
+            for proc in processes:
+                for sl in proc.sensitivity_list:
+                    sl.linked_process.append(proc)
             architectures.append(Architecture(name, entity, signals, processes))
 
     return architectures

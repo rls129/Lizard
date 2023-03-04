@@ -10,6 +10,8 @@ class Port:
         self.dirn = dirn
         self.type = ptype
         self.value = default_values[ptype]
+        self.future_buffer = None
+        self.linked_process = []
 
 class Entity:
     def __init__(
