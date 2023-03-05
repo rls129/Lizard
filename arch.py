@@ -421,7 +421,7 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]:
         
         def get_shorthandprocess(sprocess: Tree) -> Process:
             # print()
-            pname = "Anon"
+            pname = "shorthandprocess"
             senitivity_list = []
             statements = [] # len == 1 or 0
             symbols = [] # always none
