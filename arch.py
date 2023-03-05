@@ -33,7 +33,7 @@ class Signal:
     def __init__(self, n: str, vtype: str, value: str):
         self.name:str = n
         self.type: str = vtype
-        self.value: str = value # TODO: for first iteration, set future value instead of this?
+        self.value: str = value
         self.future_buffer: str = 'None'
         self.linked_process: List[Process] = []
 
@@ -165,7 +165,7 @@ def get_compile_value(node, signals: List[Signal], entity: Entity):
             v1, t1 = get_compile_value(value.children[0], signals, entity)
             v2, t2 = get_compile_value(value.children[2], signals, entity)
             
-            if t1 == t2 or cast_map[t1] == cast_map[t2]: # TODO: Cast Map Maybe??
+            if t1 == t2 or cast_map[t1] == cast_map[t2]:
                 op = value.children[1].value
                 result = evaluate(op, v1, v2, t1)
                 if op == '=' or op == '/=':
@@ -232,7 +232,6 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
                 t2 = get_compile_type(node.children[2], signals, entity, p_symbols, lvalue)
                 
                 if t1 == t2 or cast_map[t1] == cast_map[t2]:
-                    # TODO: maybe operation changes type?
                     op = node.children[1].value
                     if op == '=' or op == '/=':
                         return 'bool'
@@ -298,7 +297,12 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
             return None
         return True
     elif statement.children[0].data.value == "wait":
-        # TODO: Implement it
+        if len(statement.children[0].children) > 0:
+            try:
+                value = int(statement.children[0].children[0])
+            except:
+                error.push_error(statement.children[0].children[0].line, statement.children[0].children[0].column, f"Non-integer value for wait time")
+                return None
         return True
     elif statement.children[0].data.value == "report":
         # TODO: Implement it
@@ -501,7 +505,7 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]:
             get_sensitivity_list(sprocess.children[1])
             statements.append(deepcopy(sprocess))
 
-            return Process(pname, statements, senitivity_list, symbols) # TODO: Remove pc addition to shorthand processes
+            return Process(pname, statements, senitivity_list, symbols)
 
         def get_longformprocess(lfprocess: Tree, entity: Entity, signals: List[Signal]) -> Process:
             pname = None

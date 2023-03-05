@@ -2,6 +2,7 @@ from entity import *
 from arch import Architecture, Process, get_compile_value, Signal, Variable
 from typing import Tuple, Optional
 import heapq
+from copy import deepcopy
 
 class Simulation:
     def __init__(self):
@@ -14,7 +15,7 @@ class Simulation:
             for w in arch.waiting_process:
                 if min < w[1]:
                     min = w[1]
-        self.current_time = (self.current_time + min)
+        self.current_time = min
         if self.current_time > self.to_run_till:
             self.current_time = self.to_run_till
 
@@ -116,7 +117,7 @@ def get_runtime_value(node, architecture: Architecture, symbol: List[Variable]) 
 #             success_flag = None
 #     return success_flag
 
-def execute_st(statement, arch: Architecture, symbols: List[Variable]):
+def execute_st(statement, arch: Architecture, symbols: List[Variable], process: Process):
     
     
     # def get_condition_type(condition, signals, entity, symbols, lvalue):
@@ -161,16 +162,34 @@ def execute_st(statement, arch: Architecture, symbols: List[Variable]):
         lvalue.future_buffer = rvalue
         if lvalue not in arch.signals_changed:
             arch.signals_changed.append(lvalue)
-            return None
+        process.statements.pc =  (process.statements.pc + 1) % len(process.statements.statements)
+        return None
     elif statement.data.value == "variable_assignment":
         lvalue = get_lvalue_reference(statement.children[0])
         rvalue, _ = get_runtime_value(statement.children[1], arch, symbols)
         lvalue.value = rvalue
+        process.statements.pc =  (process.statements.pc + 1) % len(process.statements.statements)
         return None
     elif statement.data.value == "wait":
+        if len(statement.children) == 0:
+            process.statements.pc =  (process.statements.pc + 1) % len(process.statements.statements)
+            return simulation.to_run_till
+        else:
+            def convert_to_nano(unit: str):
+                if unit == "ns":
+                    return 1
+                elif unit == "us":
+                    return 1_000
+                elif unit == "ms":
+                    return 1_000_000
+                else: #"s"
+                    return 1_000_000_000
+            
+            value = int(statement.children[0])
+            unit  = statement.children[1]
+            process.statements.pc =  (process.statements.pc + 1) % len(process.statements.statements)
+            return value * convert_to_nano(unit)
 
-        # TODO: Implement it
-        return True
     elif statement.data.value == "report":
         # TODO: Implement it
         return True
@@ -237,16 +256,16 @@ def execute_process(process: Process, architecture: Architecture, waiting_proces
         lvalue.value = rvalue
         if lvalue not in architecture.signals_changed: #Intentional, replicate this
             architecture.signals_changed.append(lvalue)
+        return None
 
     def execute_longformprocess(lfprocess: Process, arch: Architecture): # Make this return None if it encounters wait without times
         # wait breaks the execution and return queue_time
-        for statement in lfprocess.statements:
-            queue_time = execute_st(statement, arch, lfprocess.symbol_table)
+        for i in range(lfprocess.statements.pc, len(lfprocess.statements.statements)):
+            queue_time = execute_st(lfprocess.statements[i], arch, lfprocess.symbol_table, lfprocess)
             if queue_time is not None:
-                break
+                return queue_time
         
 
-        pass
 
     if process.name == "shorthandprocess":
         if waiting_process: # Only relevant for time 0
@@ -268,6 +287,12 @@ def execute_process(process: Process, architecture: Architecture, waiting_proces
             execute_longformprocess(process, architecture)
             return None
         
+def vcd_data(architectures: List[Architecture]):
+    print(f"At {simulation.current_time}")
+    for arch in architectures:
+        for p in arch.entity.ports:
+            print(p.name, p.value)
+
 
 def run_simulation(exec_time: float, architectures: List[Architecture]):
     simulation.to_run_till = simulation.current_time + exec_time
@@ -290,18 +315,19 @@ def run_simulation(exec_time: float, architectures: List[Architecture]):
                 # arch.signals_changed.remove(sig) #should be removed once done with, but fucks up iterator so
             arch.signals_changed.clear()
 
-
+    vcd_data(architectures)
     simulation.perform_jump(architectures)
 
     while(simulation.current_time < simulation.to_run_till):
         for arch in architectures:
+            temp_process: List[Tuple[Process, float]] = []
             for process in arch.waiting_process:
                 if process[1] == simulation.current_time:
                     queue_time = execute_process(process[0], arch, True)
-                    arch.waiting_process.remove(process)
                     if queue_time is not None:
-                            arch.waiting_process.append((process[0], queue_time))
-
+                            temp_process.append((process[0], simulation.current_time + queue_time))
+            arch.waiting_process.clear()
+            arch.waiting_process.extend(temp_process)
             for sig in arch.signals_changed:
                 sig.value = sig.future_buffer if sig.future_buffer is not None else sig.value
                 for pr in sig.linked_process:
@@ -310,6 +336,6 @@ def run_simulation(exec_time: float, architectures: List[Architecture]):
             arch.signals_changed.clear()
 
 
+        vcd_data(architectures)                         
         simulation.perform_jump(architectures)
-                                        
         pass

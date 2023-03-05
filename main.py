@@ -20,7 +20,7 @@ def main():
     for err in error.errno:
         print (err.line, err.col, err.msg)
     print(ast.pretty())
- 
+    assert(len(error.errno) == 0)
     run_simulation(100., architectures)
     print()
     # testbench_itr
