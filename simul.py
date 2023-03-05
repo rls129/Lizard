@@ -165,9 +165,7 @@ def execute_st(statement, arch: Architecture, symbols: List[Variable]):
     elif statement.data.value == "variable_assignment":
         lvalue = get_lvalue_reference(statement.children[0])
         rvalue, _ = get_runtime_value(statement.children[1], arch, symbols)
-        lvalue.future_buffer = rvalue
-        if lvalue not in arch.signals_changed:
-            arch.signals_changed.append(lvalue)
+        lvalue.value = rvalue
         return None
     elif statement.data.value == "wait":
 
