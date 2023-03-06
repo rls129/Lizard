@@ -48,6 +48,7 @@ class Statements:
     def __init__(self, stmts: List[Tree]):
         self.statements = stmts
         self.pc = 0
+        self.stack = []
 
     def __getitem__(self, i):
         return self.statements[i]
@@ -350,7 +351,7 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
         statements_node = while_statement.children[1]
         if parse_sts(statements_node, signals, entity, symbols, statements) is None:
             return None
-        pass
+        return True
     return None
 
 
@@ -575,7 +576,7 @@ def get_architecture(ast: Tree, entities: List[Entity]) -> List[Architecture]:
                                 if parse_st(statement, signals, entity,symbols, statements) is None:
                                     continue
                             push_ready_statement = deepcopy(statement.children[0]) # To avoid references and/or edits to ast 
-                            update_statements_type(push_ready_statement)
+                            # update_statements_type(push_ready_statement)
                             statements.append(push_ready_statement)
                         pass
 

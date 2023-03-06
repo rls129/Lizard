@@ -117,33 +117,9 @@ def get_runtime_value(node, architecture: Architecture, symbol: List[Variable]) 
 #             success_flag = None
 #     return success_flag
 
-def execute_st(statement, arch: Architecture, symbols: List[Variable], process: Process):
+def execute_st(arch: Architecture, symbols: List[Variable], process: Process):
     
-    
-    # def get_condition_type(condition, signals, entity, symbols, lvalue):
-    #     if len(condition.children) == 1:
-    #         return get_compile_type(condition.children[0], signals, entity, symbols, lvalue)
-    #     if isinstance(condition.children[0], Tree) and condition.children[0].data.value == "value":
-    #         t1 = get_compile_type(condition.children[0], signals, entity, symbols, lvalue)
-    #         t2 = get_compile_type(condition.children[2], signals, entity, symbols, lvalue)
-            
-    #         if t1 == t2 or cast_map[t1] == cast_map[t2]:
-    #             return 'bool'
-    #         else:
-    #             cur = condition
-    #             while isinstance(cur, Tree):
-    #                 cur = cur.children[0]
-    #             error.push_error(cur.line, cur.column, f"Type Mismatch {t1} and {t2}")
-    #             return None
-
-    #     for child in condition.children:
-    #         if not isinstance(child, Tree):
-    #             continue
-    #         if child.data.value == "condition":
-    #             if get_condition_type(child, signals, entity, symbols, lvalue)!='bool':
-    #                 return None
-    #     return 'bool'
-
+    stack = process.statements.stack    #copy reference only
             
     def get_lvalue_reference(lval):
         for p in arch.entity.ports:
@@ -155,88 +131,94 @@ def execute_st(statement, arch: Architecture, symbols: List[Variable], process: 
         for sym in symbols:
             if sym.name == lval.value:
                 return sym
-            
-    if statement.data.value == "shorthandprocess":
-        lvalue = get_lvalue_reference(statement.children[0])
-        rvalue, _ = get_runtime_value(statement.children[1], arch, symbols)
-        lvalue.future_buffer = rvalue
-        if lvalue not in arch.signals_changed:
-            arch.signals_changed.append(lvalue)
-        process.statements.pc =  (process.statements.pc + 1) % len(process.statements.statements)
-        return None
-    elif statement.data.value == "variable_assignment":
-        lvalue = get_lvalue_reference(statement.children[0])
-        rvalue, _ = get_runtime_value(statement.children[1], arch, symbols)
-        lvalue.value = rvalue
-        process.statements.pc =  (process.statements.pc + 1) % len(process.statements.statements)
-        return None
-    elif statement.data.value == "wait":
-        if len(statement.children) == 0:
-            process.statements.pc =  (process.statements.pc + 1) % len(process.statements.statements)
-            return simulation.to_run_till
-        else:
-            def convert_to_nano(unit: str):
-                if unit == "ns":
-                    return 1
-                elif unit == "us":
-                    return 1_000
-                elif unit == "ms":
-                    return 1_000_000
-                else: #"s"
-                    return 1_000_000_000
-            
-            value = int(statement.children[0])
-            unit  = statement.children[1]
-            process.statements.pc =  (process.statements.pc + 1) % len(process.statements.statements)
-            return value * convert_to_nano(unit)
 
-    elif statement.data.value == "report":
-        # TODO: Implement it
-        return True
-    elif statement.data.value == "if_statement":
-        # ifstatement = statement.children[0]
-        # condition = ifstatement.children[0]
-        # condition_type = get_condition_type(condition, signals, entity, symbols, False)
-        # if condition_type != "bool":
-        #     cur = ifstatement
-        #     while isinstance(cur, Tree):
-        #         cur = cur.children[0]
-        #     error.push_error(cur.line, cur.column, "Value inside if condition is not boolean type.")
-        #     return None
-        # ifstatements = ifstatement.children[1]
-        # if parse_sts(ifstatements, signals, entity, symbols, statements) is None:
-        #     return None
-        # for i in range(2, len(ifstatement.children)):
-        #     child = ifstatement.children[i]
-        #     if child.children[0].data.value == "condition":
-        #         condition = child.children[0]
-        #         condition_type = get_condition_type(condition, signals, entity, symbols, False)
-        #         if condition_type != "bool":
-        #             cur = child
-        #             while isinstance(cur, Tree):
-        #                 cur = cur.children[0]
-        #             error.push_error(cur.line, cur.column, "Value inside elsif condition is not boolean type.")
-        #             return None
-        #     elstatements = child.children[-1]
-        #     if parse_sts(elstatements, signals, entity, symbols, statements) is None:
-        #         return None
+    def evaluateCondition(condition: Tree) -> bool:
+        if isinstance(condition.children[0], Token) and condition.children[0].value == "(":
+            return evaluateCondition(condition.children[1])
+        elif isinstance(condition.children[1], Token) and condition.children[1].value == "and":
+            assert(isinstance(condition.children[0], Tree) and isinstance(condition.children[2], Tree))
+            return evaluateCondition(condition.children[0]) and evaluateCondition(condition.children[2])
+        elif isinstance(condition.children[1], Token) and condition.children[1].value == "or":
+            assert(isinstance(condition.children[0], Tree) and isinstance(condition.children[2], Tree))
+            return evaluateCondition(condition.children[0]) or evaluateCondition(condition.children[2])
+        elif isinstance(condition.children[0], Token) and condition.children[0].value == "not":
+            assert(isinstance(condition.children[1], Tree))
+            return not evaluateCondition(condition.children[1])
+        assert(isinstance(condition.children[0], Tree) and isinstance(condition.children[2], Tree) and isinstance(condition.children[1], Token))
+        lvalue = get_runtime_value(condition.children[0], arch, symbols)[0]
+        rvalue = get_runtime_value(condition.children[2], arch, symbols)[0]
+        if condition.children[1].value == "=":
+            if lvalue == rvalue:
+                return True
+            return False
+        elif condition.children[1].value == "/=":
+            if lvalue != rvalue:
+                return True
+            return False
+        return False
+            
+    def fill_sts(stack, sts):
+        for st in reversed(sts.children):
+            stack.append(st.children[0])
 
-        # # print()
-        return None
-    elif statement.data.value == "while_statement":
-        # while_statement = statement.children[0]
-        # condition = while_statement.children[0]
-        # condition_type = get_condition_type(condition, signals, entity, symbols, False)
-        # if condition_type != "bool":
-        #     cur = while_statement
-        #     while isinstance(cur, Tree):
-        #         cur = cur.children[0]
-        #     error.push_error(cur.line, cur.column, "Value inside elsif condition is not boolean type.")
-        #     return None
-        # statements_node = while_statement.children[1]
-        # if parse_sts(statements_node, signals, entity, symbols, statements) is None:
-        #     return None
-        return None
+    while stack:
+        statement = stack[-1]
+        if statement.data.value == "shorthandprocess":
+            stack.pop()
+            lvalue = get_lvalue_reference(statement.children[0])
+            rvalue, _ = get_runtime_value(statement.children[1], arch, symbols)
+            lvalue.future_buffer = rvalue
+            if lvalue not in arch.signals_changed:
+                arch.signals_changed.append(lvalue)
+        elif statement.data.value == "variable_assignment":
+            stack.pop()
+            lvalue = get_lvalue_reference(statement.children[0])
+            rvalue, _ = get_runtime_value(statement.children[1], arch, symbols)
+            lvalue.value = rvalue
+        elif statement.data.value == "wait":
+            stack.pop()
+            if len(statement.children) == 0:
+                return simulation.to_run_till
+            else:
+                def convert_to_nano(unit: str):
+                    if unit == "ns":
+                        return 1
+                    elif unit == "us":
+                        return 1_000
+                    elif unit == "ms":
+                        return 1_000_000
+                    else: #"s"
+                        return 1_000_000_000
+                
+                value = int(statement.children[0])
+                unit  = statement.children[1]
+                return value * convert_to_nano(unit)
+        elif statement.data.value == "report":
+            # TODO: Implement it
+            stack.pop()
+            return True
+        elif statement.data.value == "if_statement":
+            stack.pop()
+            condition = statement.children[0]
+            if(evaluateCondition(condition)):
+                # assert(isinstance(statement.children[1], Tree))
+                fill_sts(stack, statement.children[1])
+            else:
+                for i in range(2, len(statement.children)):
+                    child = statement.children[i]
+                    if child.data.value == "elsif":
+                        childcondition = child.children[0]
+                        if evaluateCondition(childcondition):
+                            fill_sts(stack, child.children[1])
+                            break
+                    if child.data.value == "else":
+                        fill_sts(stack, child.children[0])
+        elif statement.data.value == "while_statement":
+            condition = statement.children[0]
+            if evaluateCondition(condition):
+                fill_sts(stack, statement.children[1])
+            else:
+                stack.pop()
     return None
             
 def execute_process(process: Process, architecture: Architecture, waiting_process: bool) -> float | None:
@@ -260,10 +242,17 @@ def execute_process(process: Process, architecture: Architecture, waiting_proces
 
     def execute_longformprocess(lfprocess: Process, arch: Architecture): # Make this return None if it encounters wait without times
         # wait breaks the execution and return queue_time
-        for i in range(lfprocess.statements.pc, len(lfprocess.statements.statements)):
-            queue_time = execute_st(lfprocess.statements[i], arch, lfprocess.symbol_table, lfprocess)
-            if queue_time is not None:
-                return queue_time
+        if len(lfprocess.statements.stack) == 0:
+            for st in reversed(lfprocess.statements.statements):
+                lfprocess.statements.stack.append(st)
+        
+        queue_time = execute_st(arch, lfprocess.symbol_table, lfprocess)
+        if queue_time is not None:
+            return queue_time
+        # for i in range(lfprocess.statements.pc, len(lfprocess.statements.statements)):
+        #     queue_time = execute_st(lfprocess.statements[i], arch, lfprocess.symbol_table, lfprocess)
+        #     if queue_time is not None:
+        #         return queue_time
         
 
 

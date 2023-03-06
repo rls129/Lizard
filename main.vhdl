@@ -14,35 +14,32 @@ END entity HalfAdder;
 ARCHITECTURE addArchitecture1 of HalfAdder IS
     signal g: std_logic;
 BEGIN
-    -- b <= ((a) xor a);
-    -- p1: process(a, b) is
-    -- variable ad: std_logic := ('H');
-    -- begin
-    --     -- ad := ((a  and bd) or (a and b));
-    --     -- a := 'L';
-    --     -- wait; 
-    --     -- a <= (a and b);
-    --     -- report "something" severity error;
-    --     b <= (a xor a);
-
-    --     if(a = '0') then
-    --     b <= (ad and a);
-    --     if (a = a) then
-    --         b <= (a xor a);
-    --     elsif (g = '0') then
-    --         g <= (g and '0');
-    --     else
-    --         b <= a;
-    --     end if;
-    --     end if;
-    --     -- report "something" severity error;
-    -- end;
-
-    p2: process is
+    -- b <= (a xor a);
+    p1: process is
+    variable ad: std_logic := 'H';
     begin
-    b <= '0';
-    wait for 10 ns;
-    b <= '1';
-    wait for 10 ns;
+        -- ad := ((a  and bd) or (a and b));
+        -- a := 'L';
+        -- wait; 
+        -- a <= (a and b);
+        -- report "something" severity error;
+        -- wait;
+        -- s <= (ad and b);
+        wait for 1 ns;
+        while (g /= '1') loop
+            if (b = 'u') then
+                b <= '0';
+                wait for 1 ns;
+            elsif (b = '0') then
+                b <= '1';
+                wait for 1 ns;
+            else
+                g <= '1';
+                wait for 1 ns;
+            end if;
+        end loop;
+        g <= '1';
+        wait for 10 ns;
+        -- report "something" severity error;
     end;
 END;
