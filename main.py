@@ -1,28 +1,12 @@
-#!/usr/bin/env python
-from typing import List, Tuple
-
-from vhdl_ast import parse, Tree, Token
-from utils import treerecursive
-from entity import get_entites, print_entities, Port
-from arch import get_architecture, print_architecture, Process, Signal
-from simul import simulation, run_simulation, heapq
-import error
+from PySide6.QtWidgets import *
+from ui import MainWindow
+import sys
 
 def main():
-    ast: Tree = parse("vhdl.lark", "main.vhdl")
-    entities = get_entites(ast)
-    # testbench_intit
-    print_entities(entities)
-    print()
-    architectures = get_architecture(ast, entities)
-    print_architecture(architectures)
-    print()
-    for err in error.errno:
-        print (err.line, err.col, err.msg)
-    print(ast.pretty())
-    assert(len(error.errno) == 0)
-    run_simulation(100., architectures)
-    print()
-    # testbench_itr
+    app = QApplication(sys.argv)
+    app.setApplicationName("VHDL Editor")
+    window = MainWindow()
+    app.exec()
+
 
 main()
