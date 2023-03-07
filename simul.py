@@ -29,9 +29,9 @@ def get_runtime_value(node, architecture: Architecture, symbol: List[Variable]) 
             if operation == "and":
                 if value1 == 'l' or value2 == 'l':
                     return 'l'
-                if value2 == 'h' and value2 == 'h':
+                if value1 == 'h' and value2 == 'h':
                     return 'h'
-                if value2 == 'u' or value2 == 'u':
+                if value1 == 'u' or value2 == 'u':
                     return 'u'
                 return 'x'
             if operation == "or":
@@ -281,6 +281,12 @@ def vcd_data(architectures: List[Architecture]):
     for arch in architectures:
         for p in arch.entity.ports:
             print(p.name, p.value)
+        for s in arch.signals:
+            print(s.name, s.value)
+        for proc in arch.processes:
+            for v in proc.symbol_table:
+                print(v.name, v.value)
+
 
 
 def run_simulation(exec_time: float, architectures: List[Architecture]):

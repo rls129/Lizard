@@ -8,6 +8,7 @@ import sys
 
 from highlighter import VHDLHighlighter
 from line_number import QTextEditHighlighter
+import error
 
 import cli
 
@@ -168,10 +169,12 @@ class MainWindow(QMainWindow):
 
     
     def compile(self):
+        self.errorbox.clear()
+        error.errno.clear()
+        self.save_file()
         print("Trying to compile", self.config["lastActiveFile"])
         cli.compile(self.config["lastActiveFile"])
         
-        self.errorbox.clear()
 
         def errorbox_error_clicked(item):
             index = self.errorbox.row(item)
