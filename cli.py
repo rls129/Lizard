@@ -29,7 +29,7 @@ def compile(filename):
     return architectures
 
 def execute(architectures):
-    run_simulation(100., architectures)
+    run_simulation(10., architectures)
     # print()
     # testbench_itr
 

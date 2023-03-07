@@ -45,15 +45,9 @@ def get_runtime_value(node, architecture: Architecture, symbol: List[Variable]) 
             if operation == "xor":
                 if value1 == 'u' or value2 == 'u':
                     return 'u'
-                if value1 == 'h' or value2 == 'l':
+                if value1 != value2:
                     return 'h'
-                if value1 == 'l' and value2 == 'h':
-                    return 'h'
-                if value1 == 'h' and value2 == 'l':
-                    return 'h'
-                if value1 == 'h' and value2 == 'h':
-                    return 'l'
-                if value1 == 'l' and value2 == 'l':
+                elif value1 == value2:
                     return 'l'
                 return 'x'
             if operation == "nor":
@@ -234,7 +228,7 @@ def execute_process(process: Process, architecture: Architecture, waiting_proces
             
         statement = process.statements[0]
         lvalue = get_lvalue_reference(statement.children[0])
-        rvalue, _ = get_compile_value(statement.children[1], architecture.signals, architecture.entity)
+        rvalue, _ = get_runtime_value(statement.children[1], architecture, [])
         lvalue.value = rvalue
         if lvalue not in architecture.signals_changed: #Intentional, replicate this
             architecture.signals_changed.append(lvalue)
@@ -304,7 +298,7 @@ def run_simulation(exec_time: float, architectures: List[Architecture]):
                     arch.waiting_process.append((process, queue_time))
                 
             for sig in arch.signals_changed: #Intentionally one block outside unlike below
-                sig.value = sig.future_buffer if sig.future_buffer is not None else sig.value
+                sig.value = sig.value if sig.future_buffer is None or sig.future_buffer == 'None' else sig.future_buffer
                 for pr in sig.linked_process:
                     execute_process(pr, arch, False) # Guaranteed to be inactive (aka sensitivity list)
                 # arch.signals_changed.remove(sig) #should be removed once done with, but fucks up iterator so
@@ -324,7 +318,7 @@ def run_simulation(exec_time: float, architectures: List[Architecture]):
             arch.waiting_process.clear()
             arch.waiting_process.extend(temp_process)
             for sig in arch.signals_changed:
-                sig.value = sig.future_buffer if sig.future_buffer is not None else sig.value
+                sig.value = sig.value if sig.future_buffer is None or sig.future_buffer == 'None' else sig.future_buffer
                 for pr in sig.linked_process:
                     execute_process(pr, arch, False) # Guaranteed to be inactive (aka sensitivity list)
             # arch.signals_changed.remove(sig) #should be removed once done with, but fucks up iterator so
