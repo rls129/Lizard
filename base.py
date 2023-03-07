@@ -1,6 +1,6 @@
 from typing import List, Optional
 from lark import Tree, Token
-from entity import Entity
+from entity import Entity, Port
 from copy import deepcopy
 from utils import cast_map, default_values
 import error
@@ -36,8 +36,44 @@ class Process:
         self.sensitivity_list: List[Signal] = signals
         self.symbol_table = symbols
 
+def check_valid_symbol(symbol: Token, signals: List[Signal], entity: Entity, p_symbols: List[Variable], lvalue: bool, check_direction = False, isVariableAssignment: bool | None = None):
+        '''
+        '''
+        for s in signals:
+            if s.name == symbol.value:
+                if isVariableAssignment == True:
+                    error.push_error(symbol.line, symbol.column, f"Can't assign to Signal {symbol.value} in a variable assignment statement")
+                    return None
+                return s.type
+
+        for p in entity.ports:
+            if p.name == symbol.value:
+                if lvalue:
+                    if isVariableAssignment == True:
+                        error.push_error(symbol.line, symbol.column, f"Can't assign to Port {symbol.value} in a variable assignment statement")
+                        return None
+                    if p.dirn == "in" and check_direction:
+                        error.push_error(symbol.line, symbol.column, f"Can't drive input Signal {symbol.value} in a process")
+                        return None
+                else:
+                    if  p.dirn == "out" and check_direction:
+                        error.push_error(symbol.line, symbol.column, f"Can't feed output Signal {symbol.value} to drive a process")
+                        return None
+                return p.type
+        for psym in p_symbols:
+            if psym.name == symbol.value:
+                if isVariableAssignment == False:
+                    error.push_error(symbol.line, symbol.column, f"Can't assign to Variable {symbol.value} in a signal assignment statement")
+                    return None
+                return psym.type
+        
+        error.push_error(symbol.line, symbol.column, f"Undefined Symbol {symbol.value}")
+        return None
+
 def get_compile_value(node, signals: List[Signal], entity: Entity):
     '''
+    Used to calculate the value of assignments necessary to be calculated in compile time
+
     Binary Expression Tree
     Literal Tree
     Identifier Token
@@ -80,6 +116,41 @@ def get_compile_value(node, signals: List[Signal], entity: Entity):
                     node = node.children[0]
                 error.push_error(cur.line, cur.column, f"Type Mismatch {t1} and {t2}")
                 return None, None
+
+def get_compile_type(node: Tree, signals: List[Signal], entity: Entity, p_symbols: List[Variable], lvalue: bool, check_direction = False, isVariableAssignment: bool | None = None):
+        '''
+        Used to extract type information of identifiers/literals for any kind of statements during compilation
+        Return: Type Information
+        '''
+        if isinstance(node, Token):
+            if node.type == "IDENTIFIER":
+                return check_valid_symbol(node, signals, entity, p_symbols, lvalue, check_direction, isVariableAssignment)
+                
+        if isinstance(node, Tree):
+            if node.data.value == "literal":
+                literal = node.children[0]
+                return literal.type
+
+            if node.data.value == "binary_expression":
+                t1 = get_compile_type(node.children[0], signals, entity, p_symbols, lvalue)
+                t2 = get_compile_type(node.children[2], signals, entity, p_symbols, lvalue)
+                
+                if t1 == t2 or cast_map[t1] == cast_map[t2]:
+                    op = node.children[1].value
+                    if op == '=' or op == '/=':
+                        return 'bool'
+                    return t1
+                else:
+                    cur = node
+                    while isinstance(cur, Tree):
+                        cur = cur.children[0]
+                    error.push_error(cur.line, cur.column, f"Type Mismatch {t1} and {t2}")
+                    return None
+            if node.data.value == "unary_expression":
+                # TODO
+                pass
+            if node.data.value == "value":
+                return get_compile_type(node.children[0], signals, entity, p_symbols, lvalue)
 
 def get_shorthandprocess(sprocess: Tree, entity: Entity, signals: List[Signal]) -> Process:
         # print()
@@ -164,6 +235,8 @@ def get_shorthandprocess(sprocess: Tree, entity: Entity, signals: List[Signal]) 
         statements.append(deepcopy(sprocess))
 
         return Process(pname, statements, senitivity_list, symbols)
+
+
 
 def get_longformprocess(lfprocess: Tree, entity: Entity, signals: List[Signal]) -> Process:
     pname = None
@@ -270,94 +343,37 @@ def parse_sts(statements_node, signals: List[Signal], entity: Entity, symbols: L
             success_flag = None
     return success_flag
 
-def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Variable], statements: List[Tree]):
-    def check_valid_symbol(symbol: Token, signals: List[Signal], entity: Optional[Entity], p_symbols: List[Variable], lvalue: bool, check_direction = False):
-        '''
-        Only used for evaluation of rvalue in shorthand process
-        '''
-        for s in signals:
-            if s.name == symbol.value:
-                return s.type
-        if entity is not None:
-            for p in entity.ports:
-                if p.name == symbol.value:
-                    if lvalue:
-                        if p.dirn == "in" and check_direction:
-                            error.push_error(symbol.line, symbol.column, f"Can't drive input signal {symbol.value} in a process")
-                            return None
-                    else:
-                        if  p.dirn == "out" and check_direction:
-                            error.push_error(symbol.line, symbol.column, f"Can't feed output signal {symbol.value} to drive a process")
-                            return None
-                    return p.type
-        for psym in p_symbols:
-            if psym.name == symbol.value:
-                return psym.type
+def get_condition_type(condition, signals, entity, symbols, lvalue):
+    if len(condition.children) == 1:
+        return get_compile_type(condition.children[0], signals, entity, symbols, lvalue)
+    if isinstance(condition.children[0], Tree) and condition.children[0].data.value == "value":
+        t1 = get_compile_type(condition.children[0], signals, entity, symbols, lvalue)
+        t2 = get_compile_type(condition.children[2], signals, entity, symbols, lvalue)
         
-        error.push_error(symbol.line, symbol.column, f"Undefined Symbol {symbol.value}")
-        return None
-    def get_compile_type(node: Tree, signals: List[Signal], entity: Optional[Entity], p_symbols: List[Variable], lvalue: bool, check_direction = False):
-        '''
-        Only used for evaluation of values in shorthand process
-        '''
-        if isinstance(node, Token):
-            if node.type == "IDENTIFIER":
-                return check_valid_symbol(node, signals, entity, p_symbols, lvalue, check_direction)
-                
-        if isinstance(node, Tree):
-            if node.data.value == "literal":
-                literal = node.children[0]
-                return literal.type
+        if t1 == t2 or cast_map[t1] == cast_map[t2]:
+            return 'bool'
+        else:
+            cur = condition
+            while isinstance(cur, Tree):
+                cur = cur.children[0]
+            error.push_error(cur.line, cur.column, f"Type Mismatch {t1} and {t2}")
+            return None
 
-            if node.data.value == "binary_expression":
-                t1 = get_compile_type(node.children[0], signals, entity, p_symbols, lvalue)
-                t2 = get_compile_type(node.children[2], signals, entity, p_symbols, lvalue)
-                
-                if t1 == t2 or cast_map[t1] == cast_map[t2]:
-                    op = node.children[1].value
-                    if op == '=' or op == '/=':
-                        return 'bool'
-                    return t1
-                else:
-                    cur = node
-                    while isinstance(cur, Tree):
-                        cur = cur.children[0]
-                    error.push_error(cur.line, cur.column, f"Type Mismatch {t1} and {t2}")
-                    return None
-            if node.data.value == "unary_expression":
-                # TODO
-                pass
-            if node.data.value == "value":
-                return get_compile_type(node.children[0], signals, entity, p_symbols, lvalue)
-
-    def get_condition_type(condition, signals, entity, symbols, lvalue):
-        if len(condition.children) == 1:
-            return get_compile_type(condition.children[0], signals, entity, symbols, lvalue)
-        if isinstance(condition.children[0], Tree) and condition.children[0].data.value == "value":
-            t1 = get_compile_type(condition.children[0], signals, entity, symbols, lvalue)
-            t2 = get_compile_type(condition.children[2], signals, entity, symbols, lvalue)
-            
-            if t1 == t2 or cast_map[t1] == cast_map[t2]:
-                return 'bool'
-            else:
-                cur = condition
-                while isinstance(cur, Tree):
-                    cur = cur.children[0]
-                error.push_error(cur.line, cur.column, f"Type Mismatch {t1} and {t2}")
+    for child in condition.children:
+        if not isinstance(child, Tree):
+            continue
+        if child.data.value == "condition":
+            if get_condition_type(child, signals, entity, symbols, lvalue)!='bool':
                 return None
+    return 'bool'
 
-        for child in condition.children:
-            if not isinstance(child, Tree):
-                continue
-            if child.data.value == "condition":
-                if get_condition_type(child, signals, entity, symbols, lvalue)!='bool':
-                    return None
-        return 'bool'
+def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Variable], statements: List[Tree]):
 
     if statement.children[0].data.value == "shorthandprocess":
         shprocess = statement.children[0]
-        lvalue = get_compile_type(shprocess.children[0], signals, entity,      [], True, True)
+        lvalue = get_compile_type(shprocess.children[0], signals, entity, symbols, True, True, False)
         rvalue = get_compile_type(shprocess.children[1], signals, entity, symbols, False, True)
+
         if cast_map[lvalue] != cast_map[rvalue] or lvalue == None or rvalue == None:
             cur = shprocess
             while isinstance(cur, Tree):
@@ -368,7 +384,7 @@ def parse_st(statement, signals: List[Signal], entity: Entity, symbols: List[Var
         return True
     elif statement.children[0].data.value == "variable_assignment":
         shprocess = statement.children[0]
-        lvalue = get_compile_type(shprocess.children[0],      [], None, symbols, True, True)
+        lvalue = get_compile_type(shprocess.children[0], signals, entity, symbols, True, True, True)
         rvalue = get_compile_type(shprocess.children[1], signals, entity, symbols, False, True)
         if cast_map[lvalue] != cast_map[rvalue] or lvalue == None or rvalue == None:
             cur = shprocess

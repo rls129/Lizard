@@ -249,11 +249,10 @@ def run_simulation(exec_time: float, architectures: List[Architecture]):
                 if queue_time is not None:
                     arch.waiting_process.append((process, queue_time))
                 
-            for sig in arch.signals_changed: #Intentionally one block outside unlike below
+            for sig in arch.signals_changed: 
                 sig.value = sig.value if sig.future_buffer is None or sig.future_buffer == 'None' else sig.future_buffer
                 for pr in sig.linked_process:
                     execute_process(pr, arch, False) # Guaranteed to be inactive (aka sensitivity list)
-                # arch.signals_changed.remove(sig) #should be removed once done with, but fucks up iterator so
             arch.signals_changed.clear()
 
     vcd_data(architectures)
