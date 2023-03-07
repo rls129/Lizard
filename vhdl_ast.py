@@ -1,4 +1,4 @@
-from lark import Lark, Tree, Token
+from lark import Lark, Tree
 import error
 
 def parse(grammar: str, vhdl: str) -> Tree:

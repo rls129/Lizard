@@ -34,3 +34,52 @@ cast_map = {
     None: None
 
 }
+
+def evaluate(operation, value1, value2, type_expn):
+        if type_expn == "std_logic":
+            if operation == "and":
+                if value1 == 'l' or value2 == 'l':
+                    return 'l'
+                if value1 == 'h' and value2 == 'h':
+                    return 'h'
+                if value1 == 'u' or value2 == 'u':
+                    return 'u'
+                return 'x'
+            if operation == "or":
+                if value1 == 'h' or value2 == 'h':
+                    return 'h'
+                if value2 == 'l' and value2 == 'l':
+                    return 'l'
+                if value2 == 'u' or value2 == 'u':
+                    return 'u'
+                return 'x'
+            if operation == "xor":
+                if value1 == 'u' or value2 == 'u':
+                    return 'u'
+                if value1 != value2:
+                    return 'h'
+                elif value1 == value2:
+                    return 'l'
+                return 'x'
+            if operation == "nor":
+                if value2 == 'h' or value2 == 'h':
+                    return 'l'
+                if value2 == 'l' or value2 == 'l':
+                    return 'h'
+                if value1 == 'u' or value2 == 'u':
+                    return 'u'
+                return 'x'
+            if operation == "nand":
+                if value1 == 'h' and value2 == 'h':
+                    return 'l'
+                if value1 == 'l' or value2 == 'l':
+                    return 'h'
+                if value1 == 'u' or value2 == 'u':
+                    return 'u'
+                return 'x'
+        if type_expn == "std_ulogic":
+            pass
+        if type_expn == "BIT_LITERAL":
+            pass
+        if type_expn == "INTEGER":
+            pass

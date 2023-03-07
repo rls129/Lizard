@@ -1,11 +1,9 @@
 #!/usr/bin/env python
-from typing import List, Tuple
 
-from vhdl_ast import parse, Tree, Token
-from utils import treerecursive
-from entity import get_entites, print_entities, Port
-from arch import get_architecture, print_architecture, Process, Signal
-from simul import simulation, run_simulation, heapq
+from vhdl_ast import parse, Tree
+from entity import get_entites, print_entities
+from arch import get_architecture, print_architecture
+from simul import run_simulation
 import error
 
 def compile(filename):
@@ -25,11 +23,15 @@ def compile(filename):
     for err in error.errno:
         print (err.line, err.col, err.msg)
     print(ast.pretty())
-    # assert(len(error.errno) == 0)
+    if len(error.errno) > 0:
+        for err in error.errno:
+            print (err.line, err.col, err.msg)
+        return None
+
     return architectures
 
 def execute(architectures):
-    run_simulation(10., architectures)
+    run_simulation(100., architectures)
     # print()
     # testbench_itr
 

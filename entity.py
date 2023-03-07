@@ -1,5 +1,4 @@
-from lark import Token, Tree
-from enum import Enum
+from lark import Tree
 from typing import List
 from utils import default_values, cast_map
 import error
@@ -49,17 +48,26 @@ def get_entites(ast: Tree) -> List[Entity]:
 
 
 def get_ports(entity: Tree):
-    ports = []
+    ports: List[Port] = []
     for prop in entity.children:
         if isinstance(prop, Tree) and prop.data.value == "portdecl":
             for port in prop.children:
                 assert port.data.value == "port"
-                ports.append(
-                    Port(
-                        port.children[0].value,
-                        port.children[1].value,
-                        port.children[2].value,
-                    )
+                port_name = port.children[0].value
+                port_direction = port.children[1].value
+                port_type = port.children[2].value
+                check_unique = True
+                for p in ports:
+                    if p.name == port_name:
+                        error.push_error(port.children[0].line, port.children[0].column, f"Port with name {port_name} already exists in this context")
+                        check_unique = False
+                if check_unique:
+                    ports.append(
+                        Port(
+                            port_name,
+                            port_direction,
+                            port_type,
+                        )
                 )
     return ports
 

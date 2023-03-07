@@ -1,8 +1,10 @@
-from entity import *
-from arch import Architecture, Process, get_compile_value, Signal, Variable
-from typing import Tuple, Optional
-import heapq
-from copy import deepcopy
+from lark import Token, Tree
+
+
+from arch import Architecture
+from base import Process, Variable
+from utils import evaluate
+from typing import Tuple, List
 
 class Simulation:
     def __init__(self):
@@ -23,56 +25,13 @@ simulation = Simulation()
 
 
 def get_runtime_value(node, architecture: Architecture, symbol: List[Variable]) -> Tuple[str, str] | None:
+    '''
+    Binary Expression Tree
+    Literal Tree
+    Identifier Token
 
-    def evaluate(operation, value1, value2, type_expn):
-        if type_expn == "std_logic":
-            if operation == "and":
-                if value1 == 'l' or value2 == 'l':
-                    return 'l'
-                if value1 == 'h' and value2 == 'h':
-                    return 'h'
-                if value1 == 'u' or value2 == 'u':
-                    return 'u'
-                return 'x'
-            if operation == "or":
-                if value1 == 'h' or value2 == 'h':
-                    return 'h'
-                if value2 == 'l' and value2 == 'l':
-                    return 'l'
-                if value2 == 'u' or value2 == 'u':
-                    return 'u'
-                return 'x'
-            if operation == "xor":
-                if value1 == 'u' or value2 == 'u':
-                    return 'u'
-                if value1 != value2:
-                    return 'h'
-                elif value1 == value2:
-                    return 'l'
-                return 'x'
-            if operation == "nor":
-                if value2 == 'h' or value2 == 'h':
-                    return 'l'
-                if value2 == 'l' or value2 == 'l':
-                    return 'h'
-                if value1 == 'u' or value2 == 'u':
-                    return 'u'
-                return 'x'
-            if operation == "nand":
-                if value1 == 'h' and value2 == 'h':
-                    return 'l'
-                if value1 == 'l' or value2 == 'l':
-                    return 'h'
-                if value1 == 'u' or value2 == 'u':
-                    return 'u'
-                return 'x'
-        if type_expn == "std_ulogic":
-            pass
-        if type_expn == "BIT_LITERAL":
-            pass
-        if type_expn == "INTEGER":
-            pass
-
+    Return: Value, Type
+    '''
     value = node.children[0]
     if isinstance(value, Token):
         if value.type == "IDENTIFIER":
@@ -103,13 +62,6 @@ def get_runtime_value(node, architecture: Architecture, symbol: List[Variable]) 
             return result, t1
 
 
-
-# def execute_sts(statements_node, arch: Architecture, symbols: List[Variable]):
-#     success_flag = True
-#     for statement in statements_node.children:
-#         if execute_st(statement, arch, symbols) is None:
-#             success_flag = None
-#     return success_flag
 
 def execute_st(arch: Architecture, symbols: List[Variable], process: Process):
     

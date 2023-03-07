@@ -1,6 +1,4 @@
-import sys
-
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui
 
 def format(color, style=''):
     """Return a QTextCharFormat with the given attributes.

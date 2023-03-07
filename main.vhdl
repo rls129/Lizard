@@ -12,7 +12,7 @@ END entity HalfAdder;
 -- END HalfAdder;
 
 ARCHITECTURE addArchitecture1 of HalfAdder IS
-    signal a: std_logic;
+    signal g: std_logic;
 BEGIN
     -- b <= (a xor a);
     p1: process is
