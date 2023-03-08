@@ -27,6 +27,9 @@ class QTextEditHighlighter(QTextEdit):
 
         self.updateLineNumberAreaWidth(0)
 
+    def insertFromMimeData(self, source):
+        self.insertPlainText(source.text())
+
     def lineNumberAreaWidth(self):
         digits = 1
         m = max(1, self.document().blockCount())

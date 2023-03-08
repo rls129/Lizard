@@ -110,12 +110,17 @@ class MainWindow(QMainWindow):
         self.addToolBar(file_toolbar)
         file_menu = self.menuBar().addMenu("&File")
 
+        run_toolbar = QToolBar("Run")
+        run_toolbar.setIconSize(QSize(14,14))
+        self.addToolBar(run_toolbar)
+        run_menu = self.menuBar().addMenu("&Run")
+
         self.add_action(file_toolbar, file_menu, "New File",'document-new.svg',"Ctrl+n", self.new_file)
         self.add_action(file_toolbar, file_menu, "Open File",'document-open.svg',"Ctrl+o", self.open_file)
         self.add_action(file_toolbar, file_menu, "Save File",'document-save.svg',"Ctrl+s", self.save_file)
         self.add_action(file_toolbar, file_menu, "Save File As",'document-save-as.svg',"Ctrl+Shift+s", self.save_file_as)
-        self.add_action(file_toolbar, file_menu, "Compile",'builder-build-symbolic.svg',"Ctrl+Shift+s", self.compile)
-        self.add_action(file_toolbar, file_menu, "Simulate",'builder-run-start-symbolic.svg',"Ctrl+Shift+s", self.execute)
+        self.add_action(run_toolbar, run_menu, "Compile",'builder-build-symbolic.svg',"Ctrl+Shift+b", self.compile)
+        self.add_action(run_toolbar, run_menu, "Simulate",'builder-run-start-symbolic.svg',"f5", self.execute)
 
         self.update_title()
         self.show()
@@ -239,8 +244,6 @@ class MainWindow(QMainWindow):
                 self.editor.moveCursor(QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.MoveAnchor)
             self.editor.setFocus()
 
-        self.errorbox.itemClicked.connect(errorbox_error_clicked)
-        self.errorbox.setStyleSheet("::item {border: 1px solid black} ::item:hover {background: rgba(0,0, 100, 0.3)} ::item:selected {color: black; background:rgba(0,100,0, 0.3)}")
 
         '''
         Clear all errors already set
@@ -251,6 +254,20 @@ class MainWindow(QMainWindow):
         resetfmt.setUnderlineStyle(QTextCharFormat.UnderlineStyle.NoUnderline)
         self.editor.textCursor().setCharFormat(resetfmt)
         self.editor.setTextCursor(cursor_current_pos)
+        
+        if len(cli.error.errno) == 0:
+            self.statusBar().showMessage("Compilation Successful", 5000)
+            QMessageBox.information(
+                self,
+                "Result",
+                "Compilation Successful",
+                QMessageBox.StandardButton.Ok,
+                QMessageBox.StandardButton.Ok,
+            )
+            return
+
+        self.errorbox.itemClicked.connect(errorbox_error_clicked)
+        self.errorbox.setStyleSheet("::item {border: 1px solid black} ::item:hover {background: rgba(0,0, 100, 0.3)} ::item:selected {color: black; background:rgba(0,100,0, 0.3)}")
         
         for i in cli.error.errno:
             self.errorbox.addItem(f"ERROR {i.line}:{i.col} {i.msg}")
