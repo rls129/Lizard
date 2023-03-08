@@ -279,7 +279,8 @@ class MainWindow(QMainWindow):
         
         figure, axis = pyplot.subplots(len(signals), 1, sharex=True)
         for i in range(len(signals)):
-            axis[i].plot(times, values[i])
+            axis[i].plot(times, values[i], label=signals[i])
+            axis[i].legend(loc='upper right')
 
         multi = MyMultiCursor(figure.canvas, tuple(axis), color='r' , lw=1, useblit=True, horizOn=[], vertOn=axis)
         figure.canvas.mpl_connect('motion_notify_event', show_Legend)
