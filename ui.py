@@ -56,6 +56,9 @@ class MainWindow(QMainWindow):
         self.buffer = ''
         self.editor = QTextEditHighlighter()
         self.errorbox = QListWidget()
+        self.errorbox.setResizeMode(QListView.ResizeMode.Adjust)
+        self.errorbox.setSizeAdjustPolicy(QListView.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
+        self.errorbox.setMaximumHeight(100)
         self.editor.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
 
         self.myFont = QFont("Consolas", 10)
@@ -137,8 +140,12 @@ class MainWindow(QMainWindow):
 
 
     def open_file(self, autoOpen: bool = False):
+        lastPath = self.filePath
         if not autoOpen:
             self.filePath, _ = QFileDialog.getOpenFileName(self, "Open File ", os.path.dirname(self.config["lastActiveFile"]), "VHDL Files (*.vhd);; All Files (*.*)", "VHDL Files (*.vhd)")
+        if self.filePath == '':
+            self.filePath = lastPath
+            return
         if self.filePath:
             with open(self.filePath, 'r') as f:
                 text = f.read()
@@ -149,7 +156,11 @@ class MainWindow(QMainWindow):
 
     def save_file(self):
         if not self.filePath or self.filePath == './':
+            lastPath = self.filePath
             self.filePath, _ = QFileDialog.getSaveFileName(self, "Save File ", os.path.dirname(self.config["lastActiveFile"]), "VHDL Files (*.vhd);; All Files (*.*)", "VHDL Files (*.vhd)")
+            if self.filePath == '':
+                self.filePath = lastPath
+                return
         if self.filePath:
             with open(self.filePath, 'w') as f:
                 text = self.editor.toPlainText()
@@ -159,7 +170,11 @@ class MainWindow(QMainWindow):
                 self.config["lastActiveFile"] = self.filePath
 
     def save_file_as(self):
+        lastPath = self.filePath
         self.filePath, _ = QFileDialog.getSaveFileName(self, "Save File As", os.path.dirname(self.config["lastActiveFile"]), "VHDL Files (*.vhd);; All Files (*.*)", "VHDL Files (*.vhd)")
+        if self.filePath == '':
+            self.filePath = lastPath
+            return
         if self.filePath:
             with open(self.filePath, 'w') as f:
                 text = self.editor.toPlainText()
@@ -225,11 +240,18 @@ class MainWindow(QMainWindow):
             self.editor.setFocus()
 
         self.errorbox.itemClicked.connect(errorbox_error_clicked)
-        self.errorbox.setResizeMode(QListView.ResizeMode.Adjust)
-        self.errorbox.setSizeAdjustPolicy(QListView.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
-        self.errorbox.setMaximumHeight(100)
         self.errorbox.setStyleSheet("::item {border: 1px solid black} ::item:hover {background: rgba(0,0, 100, 0.3)} ::item:selected {color: black; background:rgba(0,100,0, 0.3)}")
 
+        '''
+        Clear all errors already set
+        '''
+        cursor_current_pos = self.editor.textCursor()
+        self.editor.selectAll()
+        resetfmt = QTextCharFormat()
+        resetfmt.setUnderlineStyle(QTextCharFormat.UnderlineStyle.NoUnderline)
+        self.editor.textCursor().setCharFormat(resetfmt)
+        self.editor.setTextCursor(cursor_current_pos)
+        
         for i in cli.error.errno:
             self.errorbox.addItem(f"ERROR {i.line}:{i.col} {i.msg}")
             row, col = i.line - 1, i.col - 1
@@ -240,8 +262,10 @@ class MainWindow(QMainWindow):
                 self.editor.moveCursor(QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.MoveAnchor)
             self.editor.moveCursor(QTextCursor.MoveOperation.EndOfWord, QTextCursor.MoveMode.KeepAnchor)
             fmt = QTextCharFormat()
-            fmt.setBackground(QColor(65,65,127,127))
+            fmt.setUnderlineColor(QColor(255,0,0,255))
+            fmt.setUnderlineStyle(QTextCharFormat.UnderlineStyle.WaveUnderline)
             self.editor.textCursor().setCharFormat(fmt)
+            self.editor.setTextCursor(cursor_current_pos)
 
 
     def execute(self):            

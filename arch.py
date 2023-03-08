@@ -43,7 +43,7 @@ def get_arch_signals(node: Tree, entity: Entity) -> List[Signal]:
                     continue
 
                 if value_type not in default_values.keys():
-                    error.push_error(signal.children[1].data.line, signal.children[1].data.column, f"No such type available {value_type}")
+                    error.push_error(signal.children[1].line, signal.children[1].column, f"No such type available {value_type}")
                     continue
 
                 default_value = default_values[value_type]
