@@ -3,8 +3,9 @@
 from vhdl_ast import parse, Tree
 from entity import get_entites, print_entities
 from arch import get_architecture, print_architecture
-from simul import run_simulation
+from simul import run_simulation, simulation
 import error
+import vcd_dump
 
 def compile(filename):
     ast: Tree = parse("vhdl.lark", filename)
@@ -27,11 +28,14 @@ def compile(filename):
         for err in error.errno:
             print (err.line, err.col, err.msg)
         return None
+    vcd_dump.init_vcd("output.vcd", architectures)
 
     return architectures
 
 def execute(architectures):
-    run_simulation(100., architectures)
+    simulation.current_time = 0
+    simulation.to_run_till = 0
+    run_simulation(5000., architectures)
     # print()
     # testbench_itr
 
@@ -39,6 +43,7 @@ def main():
     a = compile("main.vhdl")
     if a is not None:
         execute(a)
+        print()
 
 if __name__ == "__main__":
     main()

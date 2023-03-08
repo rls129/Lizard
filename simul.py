@@ -5,6 +5,8 @@ from arch import Architecture
 from base import Process, Variable
 from utils import evaluate
 from typing import Tuple, List
+import vcd_dump
+
 
 class Simulation:
     def __init__(self):
@@ -227,11 +229,14 @@ def vcd_data(architectures: List[Architecture]):
     for arch in architectures:
         for p in arch.entity.ports:
             print(p.name, p.value)
+            vcd_dump.dump(p.name, p.value)
         for s in arch.signals:
             print(s.name, s.value)
+            vcd_dump.dump(s.name, s.value)
         for proc in arch.processes:
             for v in proc.symbol_table:
                 print(v.name, v.value)
+    vcd_dump.set_time(simulation.current_time)
 
 
 
@@ -279,3 +284,5 @@ def run_simulation(exec_time: float, architectures: List[Architecture]):
         vcd_data(architectures)                         
         simulation.perform_jump(architectures)
         pass
+
+    print()

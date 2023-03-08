@@ -1,6 +1,10 @@
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
+
+import matplotlib.pyplot as pyplot
+from matplotlib.widgets import MultiCursor
+
 import json
 
 import os
@@ -11,7 +15,9 @@ from line_number import QTextEditHighlighter
 import error
 
 import cli
+import vcd_dump
 
+from  typing import List, Dict
 
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -85,6 +91,7 @@ class MainWindow(QMainWindow):
 
         self.update_title()
         self.show()
+        self.arches = []
     
     def add_action(self, file_toolbar: QToolBar, file_menu: QMenu, name, iconPath, hotkey, actionHandler):
         action = QAction(QIcon(os.path.join('res/images',iconPath)),  name , self)
@@ -173,7 +180,7 @@ class MainWindow(QMainWindow):
         error.errno.clear()
         self.save_file()
         print("Trying to compile", self.config["lastActiveFile"])
-        cli.compile(self.config["lastActiveFile"])
+        self.arches = cli.compile(self.config["lastActiveFile"])
         
 
         def errorbox_error_clicked(item):
@@ -210,9 +217,45 @@ class MainWindow(QMainWindow):
             fmt = QTextCharFormat()
             fmt.setBackground(QColor(65,65,127,127))
             self.editor.textCursor().setCharFormat(fmt)
-            
-
 
 
     def execute(self):
-        pass
+        cli.execute(self.arches)
+        times = [] # time steps 0 1 2 3 4
+        values: List[List[str]] = [] # [a: [], b: [], g: []]
+        signals  = [] # a, b, g
+
+        for v in vcd_dump.variable_values.keys():
+            print("Keys: ", v)
+            values.append([])
+            signals.append(v)
+
+
+        first = True
+        for time in vcd_dump.values_over_time:
+            # print("time", time[0])
+            times.append(time[0])
+            if first:
+                first = False
+            else:
+                times.append(time[0])
+            for index, value in enumerate(time[1]):
+                # print("v:", value, end=" ")
+                values[index].append(value)
+                values[index].append(value)
+        for v in values:
+            v.pop()
+        
+        figure, axis = pyplot.subplots(len(signals))
+        for i, v in enumerate(axis):
+            axis[i].plot(times, values[i])
+        multi = MultiCursor(figure.canvas, tuple(axis), color='r', lw=1)
+        pyplot.show()
+        # vcd_dump.output.close()
+        vcd_dump.VcdWriter = None
+
+        vcd_dump.current_time = 0
+        # vcd_dump.variables = {}
+        vcd_dump.variable_values = {}
+        vcd_dump.values_over_time = []
+        

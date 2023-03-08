@@ -5,3 +5,5 @@ output.txt
 samples
 .idea
 venv
+*.vcd
+*.conf

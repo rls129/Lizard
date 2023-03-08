@@ -1,45 +1,79 @@
 ENTITY HalfAdder IS
-    PORT (
-          a: IN std_logic;
-          b: OUT std_logic
-    );
 END entity HalfAdder;
 
--- Mango man
-
--- ENTITY HAlfAdder IS
-
--- END HalfAdder;
-
 ARCHITECTURE addArchitecture1 of HalfAdder IS
-    signal g: std_logic;
+    signal s_a: std_logic;
+    signal s_b: std_logic;
+    signal s: std_logic;
+    signal c: std_logic;
 BEGIN
-    -- b <= (a xor a);
+    s <= (s_a xor s_b);
+    c <= (s_a and s_b);
+    
     p1: process is
-    variable ad: std_logic := 'H';
     begin
-        -- ad := ((a  and bd) or (a and b));
-        -- a := 'L';
-        -- wait; 
-        -- a <= (a and b);
-        -- report "something" severity error;
-        -- wait;
-        -- s <= (ad and b);
-        wait for 1 ns;
-        while (g /= '1') loop
-            if (b = 'u') then
-                b <= '0';
-                wait for 1 ns;
-            elsif (b = '0') then
-                b <= '1';
-                wait for 1 ns;
-            else
-                g <= '1';
-                wait for 1 ns;
-            end if;
-        end loop;
-        g <= '1';
-        wait for 10 ns;
-        -- report "something" severity error;
+
+	s_a <= 'H';
+        s_b <= 'H'; wait for 100 ns;
+        s_b <= 'L'; wait for 100 ns;
+        s_b <= 'X'; wait for 100 ns;
+        s_b <= 'Z'; wait for 100 ns;
+        s_b <= 'W'; wait for 100 ns;
+        s_b <= 'U'; wait for 100 ns;
+        s_b <= '-'; wait for 100 ns;
+
+		s_a <= 'L';
+        s_b <= 'H'; wait for 100 ns;
+        s_b <= 'L'; wait for 100 ns;
+        s_b <= 'X'; wait for 100 ns;
+        s_b <= 'Z'; wait for 100 ns;
+        s_b <= 'W'; wait for 100 ns;
+        s_b <= 'U'; wait for 100 ns;
+        s_b <= '-'; wait for 100 ns;
+
+		s_a <= 'X';
+        s_b <= 'H'; wait for 100 ns;
+        s_b <= 'L'; wait for 100 ns;
+        s_b <= 'X'; wait for 100 ns;
+        s_b <= 'Z'; wait for 100 ns;
+        s_b <= 'W'; wait for 100 ns;
+        s_b <= 'U'; wait for 100 ns;
+        s_b <= '-'; wait for 100 ns;
+
+		s_a <= 'Z';
+        s_b <= 'H'; wait for 100 ns;
+        s_b <= 'L'; wait for 100 ns;
+        s_b <= 'X'; wait for 100 ns;
+        s_b <= 'Z'; wait for 100 ns;
+        s_b <= 'W'; wait for 100 ns;
+        s_b <= 'U'; wait for 100 ns;
+        s_b <= '-'; wait for 100 ns;
+
+		s_a <= 'W';
+        s_b <= 'H'; wait for 100 ns;
+        s_b <= 'L'; wait for 100 ns;
+        s_b <= 'X'; wait for 100 ns;
+        s_b <= 'Z'; wait for 100 ns;
+        s_b <= 'W'; wait for 100 ns;
+        s_b <= 'U'; wait for 100 ns;
+        s_b <= '-'; wait for 100 ns;
+
+		s_a <= 'U';
+		s_b <= 'H'; wait for 100 ns;
+		s_b <= 'L'; wait for 100 ns;
+		s_b <= 'X'; wait for 100 ns;
+		s_b <= 'Z'; wait for 100 ns;
+		s_b <= 'W'; wait for 100 ns;
+		s_b <= 'U'; wait for 100 ns;
+		s_b <= '-'; wait for 100 ns;
+
+		s_a <= '-';
+        s_b <= 'H'; wait for 100 ns;
+        s_b <= 'L'; wait for 100 ns;
+        s_b <= 'X'; wait for 100 ns;
+        s_b <= 'Z'; wait for 100 ns;
+        s_b <= 'W'; wait for 100 ns;
+        s_b <= 'U'; wait for 100 ns;
+        s_b <= '-'; wait for 100 ns;	
     end;
 END;
