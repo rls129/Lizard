@@ -5,8 +5,6 @@ from PySide6.QtWidgets import *
 import matplotlib.pyplot as pyplot
 from matplotlib.widgets import MultiCursor
 
-import json
-
 import os
 import sys
 
@@ -18,6 +16,33 @@ import cli
 import vcd_dump
 
 from  typing import List, Dict
+
+class MyMultiCursor(MultiCursor):
+    def __init__(self, canvas, axes, useblit=True, horizOn=[], vertOn=[], xPos= None, **lineprops):
+        super(MyMultiCursor, self).__init__(canvas, axes, useblit=useblit, horizOn=False, vertOn=False, **lineprops)
+
+        self.horizAxes = horizOn
+        self.vertAxes = vertOn
+
+        if len(horizOn) > 0:
+            self.horizOn = True
+        if len(vertOn) > 0:
+            self.vertOn = True
+
+        xmid = xPos
+        if xPos == None:
+            xmin, xmax = axes[-1].get_xlim()
+            xmid = 0.5 * (xmin + xmax)
+
+        ymin, ymax = axes[-1].get_ylim()
+        ymid = 0.5 * (ymin + ymax)
+
+        self.vlines = [ax.axvline(xmid, visible=False, **lineprops) for ax in self.vertAxes]
+        self.hlines = [ax.axhline(ymid, visible=True, **lineprops) for ax in self.horizAxes]
+
+    def updatex(self,xPos,  **lineprops):
+        for line in self.vlines:
+            line.x = int(xPos)
 
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -219,7 +244,13 @@ class MainWindow(QMainWindow):
             self.editor.textCursor().setCharFormat(fmt)
 
 
-    def execute(self):
+    def execute(self):            
+        def show_Legend(event): 
+            #get mouse coordinates
+            mouseXdata = event.xdata
+            if mouseXdata is not None:    
+                multi.updatex(mouseXdata, color='r')
+    
         cli.execute(self.arches)
         times = [] # time steps 0 1 2 3 4
         values: List[List[str]] = [] # [a: [], b: [], g: []]
@@ -246,10 +277,13 @@ class MainWindow(QMainWindow):
         for v in values:
             v.pop()
         
-        figure, axis = pyplot.subplots(len(signals))
-        for i, v in enumerate(axis):
+        figure, axis = pyplot.subplots(len(signals), 1, sharex=True)
+        for i in range(len(signals)):
             axis[i].plot(times, values[i])
-        multi = MultiCursor(figure.canvas, tuple(axis), color='r', lw=1)
+
+        multi = MyMultiCursor(figure.canvas, tuple(axis), color='r' , lw=1, useblit=True, horizOn=[], vertOn=axis)
+        figure.canvas.mpl_connect('motion_notify_event', show_Legend)
+
         pyplot.show()
         # vcd_dump.output.close()
         vcd_dump.VcdWriter = None
