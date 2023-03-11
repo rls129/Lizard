@@ -36,32 +36,32 @@ scene.setBackgroundBrush(Qt.gray)
 def draw(a):
     g = nx.DiGraph()
 
-    def get_graph(node):
+    def get_graph(node, level):
         global gate_count
         if isinstance(node, Token):
             assert(node.type == "IDENTIFIER")
             name = node.value
             if not g.has_node(name):       
-                g.add_node(name, type = "signal")
+                g.add_node(name, type = "signal", level=level)
             return name
         
         if isinstance(node, Tree):
             if node.data.value == "value":
-                return get_graph(node.children[0])
+                return get_graph(node.children[0], level-1)
 
             if node.data.value == "literal":
                 literal = node.children[0]
                 if not g.has_node(literal):       
-                    g.add_node(literal, type = "bit")
+                    g.add_node(literal, type = "bit", level=level)
                 return literal.value
 
             if node.data.value == "binary_expression":
-                left = get_graph(node.children[0])
-                right = get_graph(node.children[2])
+                left = get_graph(node.children[0], level-1)
+                right = get_graph(node.children[2], level-1)
                 
                 gate_name = node.children[1].value
                 gate_node = gate_name+str(gate_count)
-                g.add_node(gate_node, type = "gate", image = "./res/images/"+gate_name+".svg")
+                g.add_node(gate_node, type = "gate", image = "./res/images/"+gate_name+".svg", level=level)
                 gate_count+=1
                 g.add_edge(left, gate_node)
                 g.add_edge(right, gate_node)
@@ -74,12 +74,11 @@ def draw(a):
             sts = sts.statements
         if len(sts) == 1 and sts[0].data.value == "shorthandprocess":
             shp = process.statements[0]
-            rvalue = get_graph(shp.children[1])
-            lvalue = get_graph(shp.children[0])
+            rvalue = get_graph(shp.children[1], 0)
+            lvalue = get_graph(shp.children[0], 1)
             g.add_edge(rvalue, lvalue)
     
-    pos = nx.planar_layout(g, scale = scale, center = (WIDTH/2, HEIGHT/2))
-
+    pos = nx.multipartite_layout(g, scale = scale, center = (WIDTH/2, HEIGHT/2), subset_key = "level")
     fixed_positions = {}
     edges = list(g.edges())
     added_nodes = []
@@ -98,8 +97,10 @@ def draw(a):
             fixed_positions[n+'1'] = (x-width/2 + 5, y-height/4+2)
             fixed_positions[n+'2'] = (x-width/2 + 5, y+height/4-2)
             fixed_positions[n] = (x, y)
+            pos.update(fixed_positions)
 
             predecessors = list(filter(lambda x: x[1] == n, edges))
+            predecessors.sort(key=lambda x:pos[x[0]][1])
             successors = list(filter(lambda x: x[0] == n, edges))
 
             for i, x in enumerate(predecessors):
@@ -117,7 +118,7 @@ def draw(a):
 
     fixed_nodes = [n for n in fixed_positions]
     pos.update(fixed_positions)
-    pos = nx.spring_layout(g, pos = pos, fixed = fixed_nodes, k = 0.31, seed = 100)
+    # pos = nx.spring_layout(g, pos = pos, fixed = fixed_nodes, k = 0.1)
 
     for n in g.nodes:
         node = g.nodes[n]
