@@ -6,6 +6,7 @@ from arch import get_architecture, print_architecture
 from simul import run_simulation, simulation
 import error
 import vcd_dump
+import diagram
 
 def compile(filename):
     ast: Tree = parse("vhdl.lark", filename)
@@ -43,6 +44,8 @@ def main():
     a = compile("main.vhdl")
     if a is not None:
         execute(a)
+        for x in a:
+            diagram.draw(x)
         print()
 
 if __name__ == "__main__":
