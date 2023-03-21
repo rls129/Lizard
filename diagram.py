@@ -25,8 +25,8 @@ from PySide6.QtWidgets import (
 
 
 WIDTH = 600
-HEIGHT = 400
-scale = HEIGHT/2
+HEIGHT = 500
+scale = HEIGHT/2.2
 
 
 app = QApplication(sys.argv)
@@ -43,6 +43,9 @@ def draw(a):
             name = node.value
             if not g.has_node(name):       
                 g.add_node(name, type = "signal", level=level)
+            # else:
+                # if level < g.nodes[name]["level"]:
+                #     g.nodes[name]["level"]-=1
             return name
         
         if isinstance(node, Tree):
@@ -60,18 +63,29 @@ def draw(a):
                 right = get_graph(node.children[2], level-1)
                 
                 gate_name = node.children[1].value
-                gate_node = gate_name+str(gate_count)
-                g.add_node(gate_node, type = "gate", image = "./res/images/"+gate_name+".svg", level=level)
+                gate_node = left + gate_name + right
+                g.add_node(gate_node, type = "gate", image = "./res/images/gates/"+gate_name+".svg", level=level, gate_type = "binary")
                 gate_count+=1
                 g.add_edge(left, gate_node)
                 g.add_edge(right, gate_node)
                 return gate_node
+            
+            if node.data.value == "unary_expression":
+                right = get_graph(node.children[1], level-1)
+                gate_name = node.children[0].value
 
+                gate_node = gate_name+right
+                g.add_node(gate_node, type = "gate", image = "./res/images/gates/"+gate_name+".svg", level=level, gate_type = "unary")
+                gate_count += 1
+                g.add_edge(right, gate_node)
+                return gate_node
+                
 
     for process in a.processes:
         sts = process.statements
         if isinstance(sts, Statements):
             sts = sts.statements
+
         if len(sts) == 1 and sts[0].data.value == "shorthandprocess":
             shp = process.statements[0]
             rvalue = get_graph(shp.children[1], 0)
@@ -91,20 +105,31 @@ def draw(a):
             width = pixmap.width()
             height = pixmap.height()
             
-            added_nodes.extend([n+str(i) for i in range(3)])
+            if node["gate_type"] == "binary":
+                added_nodes.extend([n+str(i) for i in range(3)])
+
+                fixed_positions[n+'1'] = (x-width/2 + 5, y-height/4+2)
+                fixed_positions[n+'2'] = (x-width/2 + 5, y+height/4-2)
+            elif node["gate_type"] == "unary":
+                added_nodes.extend([n+str(i) for i in range(2)])
+
+                fixed_positions[n+'1'] = (x-width/2 + 5, y)
 
             fixed_positions[n+'0'] = (x+width/2 - 5, y)
-            fixed_positions[n+'1'] = (x-width/2 + 5, y-height/4+2)
-            fixed_positions[n+'2'] = (x-width/2 + 5, y+height/4-2)
             fixed_positions[n] = (x, y)
             pos.update(fixed_positions)
 
             predecessors = list(filter(lambda x: x[1] == n, edges))
             predecessors.sort(key=lambda x:pos[x[0]][1])
+
+            if node["gate_type"] == "binary" and len(predecessors) == 1:
+                predecessors.append(predecessors[0])
+
             successors = list(filter(lambda x: x[0] == n, edges))
 
             for i, x in enumerate(predecessors):
-                edges.remove(x)
+                if x in edges:
+                    edges.remove(x)
                 edges.append((x[0], n+str(i+1)))
             
             for x in successors:
