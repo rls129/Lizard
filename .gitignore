@@ -7,3 +7,5 @@ samples
 venv
 *.vcd
 *.conf
+*.vhdl
+*.vhd
