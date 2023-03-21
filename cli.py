@@ -35,7 +35,7 @@ def compile(filename):
 def execute(architectures):
     simulation.current_time = 0
     simulation.to_run_till = 0
-    run_simulation(500., architectures)
+    run_simulation(5000., architectures)
     # print()
     # testbench_itr
 
