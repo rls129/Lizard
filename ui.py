@@ -63,6 +63,7 @@ class MainWindow(QMainWindow):
 
         self.myFont = QFont("Consolas", 10)
         self.editor.setFont(self.myFont)
+        self.editor.setTabStopDistance(QFontMetricsF(self.editor.font()).horizontalAdvance(' ') * 4)
         highlight = VHDLHighlighter(self.editor.document())
         # font = QFontDatabase.systemFont()
         # font.setPointSize(11)
@@ -229,10 +230,11 @@ class MainWindow(QMainWindow):
     #     context.exec(e.globalPos())
 
     
-    def compile(self):
+    def compile(self, suppressMessage = False):
         self.errorbox.clear()
         error.errno.clear()
-        self.save_file()
+        if self.buffer != self.editor.toPlainText():
+            self.save_file()
         print("Trying to compile", self.config["lastActiveFile"])
         self.arches = cli.compile(self.config["lastActiveFile"])
         
@@ -265,6 +267,9 @@ class MainWindow(QMainWindow):
         self.editor.setTextCursor(cursor_current_pos)
         
         if len(cli.error.errno) == 0:
+            if suppressMessage:
+                return True
+            
             self.statusBar().showMessage("Compilation Successful", 5000)
             QMessageBox.information(
                 self,
@@ -273,7 +278,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.StandardButton.Ok,
                 QMessageBox.StandardButton.Ok,
             )
-            return
+            return True
 
         self.errorbox.itemClicked.connect(errorbox_error_clicked)
         self.errorbox.setStyleSheet("::item {border: 1px solid black} ::item:hover {background: rgba(0,0, 100, 0.3)} ::item:selected {color: black; background:rgba(0,100,0, 0.3)}")
@@ -292,6 +297,8 @@ class MainWindow(QMainWindow):
             fmt.setUnderlineStyle(QTextCharFormat.UnderlineStyle.WaveUnderline)
             self.editor.textCursor().setCharFormat(fmt)
             self.editor.setTextCursor(cursor_current_pos)
+        
+        return False
 
 
     def execute(self):            
