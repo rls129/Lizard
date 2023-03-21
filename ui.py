@@ -52,6 +52,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 800, 400)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self.config = {}
+        self.compiled = 0
         
         self.buffer = ''
         self.editor = QTextEditHighlighter()
@@ -229,7 +230,6 @@ class MainWindow(QMainWindow):
     #     context.addAction(QAction("test 3", self))
     #     context.exec(e.globalPos())
 
-    
     def compile(self, suppressMessage = False):
         self.errorbox.clear()
         error.errno.clear()
@@ -237,6 +237,7 @@ class MainWindow(QMainWindow):
             self.save_file()
         print("Trying to compile", self.config["lastActiveFile"])
         self.arches = cli.compile(self.config["lastActiveFile"])
+        self.compiled = 1
         
 
         def errorbox_error_clicked(item):
@@ -308,6 +309,9 @@ class MainWindow(QMainWindow):
             if mouseXdata is not None:    
                 multi.updatex(mouseXdata, color='r')
     
+        if self.compiled == 0:
+            self.compile()
+
         time = self.spinbox.value()
         cli.execute(self.arches, time)
         times = [] # time steps 0 1 2 3 4
