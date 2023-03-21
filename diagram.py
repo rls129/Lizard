@@ -29,11 +29,11 @@ HEIGHT = 500
 scale = HEIGHT/2.2
 
 
-app = QApplication(sys.argv)
-scene = QGraphicsScene(0, 0, WIDTH, HEIGHT)
-scene.setBackgroundBrush(Qt.gray)
+# app = QApplication(sys.argv)
+# scene = QGraphicsScene(0, 0, WIDTH, HEIGHT)
+# scene.setBackgroundBrush(Qt.gray)
 
-def draw(a):
+def draw(a, scene, center):
     g = nx.DiGraph()
 
     def get_graph(node, level):
@@ -92,7 +92,7 @@ def draw(a):
             lvalue = get_graph(shp.children[0], 1)
             g.add_edge(rvalue, lvalue)
     
-    pos = nx.multipartite_layout(g, scale = scale, center = (WIDTH/2, HEIGHT/2), subset_key = "level")
+    pos = nx.multipartite_layout(g, scale = scale, center = center, subset_key = "level")
     fixed_positions = {}
     edges = list(g.edges())
     added_nodes = []
@@ -163,10 +163,3 @@ def draw(a):
     for a, b in g.edges:
         # print(a, b)
         lineitem = scene.addLine(*pos[a], *pos[b])
-
-    
-    view = QGraphicsView(scene)
-    view.setRenderHint(QPainter.Antialiasing)
-    view.show()
-
-    app.exec_()
