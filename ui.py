@@ -15,7 +15,7 @@ import error
 import cli
 import vcd_dump
 
-from  typing import List, Dict
+from  typing import List, Union
 
 class MyMultiCursor(MultiCursor):
     def __init__(self, canvas, axes, useblit=True, horizOn=[], vertOn=[], xPos= None, **lineprops):
@@ -120,12 +120,21 @@ class MainWindow(QMainWindow):
         self.add_action(file_toolbar, file_menu, "Save File",'document-save.svg',"Ctrl+s", self.save_file)
         self.add_action(file_toolbar, file_menu, "Save File As",'document-save-as.svg',"Ctrl+Shift+s", self.save_file_as)
         self.add_action(run_toolbar, run_menu, "Compile",'builder-build-symbolic.svg',"Ctrl+Shift+b", self.compile)
+        self.add_simulation_time_spin_box(run_toolbar)
         self.add_action(run_toolbar, run_menu, "Simulate",'builder-run-start-symbolic.svg',"f5", self.execute)
 
         self.update_title()
         self.show()
         self.arches = []
     
+    def add_simulation_time_spin_box(self, platform: QToolBar):
+        spinbox = QSpinBox()
+        spinbox.setStatusTip("Simulation End time")
+        spinbox.setMaximum(1000000000)
+        spinbox.setValue(1000)
+        platform.addWidget(spinbox)
+        self.spinbox = spinbox
+
     def add_action(self, file_toolbar: QToolBar, file_menu: QMenu, name, iconPath, hotkey, actionHandler):
         action = QAction(QIcon(os.path.join('res/images',iconPath)),  name , self)
         action.setStatusTip(name)
@@ -292,7 +301,8 @@ class MainWindow(QMainWindow):
             if mouseXdata is not None:    
                 multi.updatex(mouseXdata, color='r')
     
-        cli.execute(self.arches)
+        time = self.spinbox.value()
+        cli.execute(self.arches, time)
         times = [] # time steps 0 1 2 3 4
         values: List[List[str]] = [] # [a: [], b: [], g: []]
         signals  = [] # a, b, g
