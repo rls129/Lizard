@@ -316,13 +316,13 @@ class MainWindow(QMainWindow):
 
         time = self.spinbox.value()
         cli.execute(self.arches, time)
-        times = [] # time steps 0 1 2 3 4
+        times = [0, 0, 0, 0, 0, 0, 0] # time steps 0 1 2 3 4
         values: List[List[str]] = [] # [a: [], b: [], g: []]
         signals  = [] # a, b, g
 
         for v in vcd_dump.variable_values.keys():
             print("Keys: ", v)
-            values.append([])
+            values.append(['0', 'x', 'z', 'w', 'u', '-', '1'])
             signals.append(v)
 
 
