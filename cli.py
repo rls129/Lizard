@@ -6,6 +6,7 @@ from arch import get_architecture, print_architecture
 from simul import run_simulation, simulation
 import error
 import vcd_dump
+import diagram
 
 import sys
 
@@ -43,16 +44,17 @@ def execute(architectures, time):
 
 def main():
     a = compile("main.vhdl")
-    if a is not None:
-        if len(sys.argv) == 1:
-            execute(a, 1000)
-        if len(sys.argv) >= 2:
-            try:
-                time = int(sys.argv[1])
-                execute(a, time)
-            except:
-                execute(a, 1000.)
-        print()
+    if len(sys.argv) == 1:
+        execute(a, 1000)
+    if len(sys.argv) >= 2:
+        try:
+            time = int(sys.argv[1])
+            execute(a, time)
+        except:
+            execute(a, 1000.)
+    for x in a:
+        diagram.draw(x)
+    print()
 
 if __name__ == "__main__":
     main()

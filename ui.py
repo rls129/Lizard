@@ -14,6 +14,7 @@ import error
 
 import cli
 import vcd_dump
+import diagram
 
 from  typing import List, Union
 
@@ -124,6 +125,7 @@ class MainWindow(QMainWindow):
         self.add_action(run_toolbar, run_menu, "Compile",'builder-build-symbolic.svg',"Ctrl+Shift+b", self.compile)
         self.add_simulation_time_spin_box(run_toolbar)
         self.add_action(run_toolbar, run_menu, "Simulate",'builder-run-start-symbolic.svg',"f5", self.execute)
+        self.add_action(run_toolbar, run_menu, "Generate Circuit",'',"f6", self.circuit)
 
         self.update_title()
         self.show()
@@ -378,3 +380,15 @@ class MainWindow(QMainWindow):
         vcd_dump.variable_values = {}
         vcd_dump.values_over_time = []
         
+    def circuit(self):
+        n = len(self.arches)
+        if n == 0:
+            return
+        self.scene = QGraphicsScene(0, 0, 600, 500*n)
+        self.scene.setBackgroundBrush(Qt.gray)
+        for i, arch in enumerate(self.arches):
+            diagram.draw(arch, self.scene, center = (300, 250 + 500*i))
+
+        self.view = QGraphicsView(self.scene)
+        self.view.setRenderHint(QPainter.Antialiasing)
+        self.view.show()
