@@ -316,13 +316,13 @@ class MainWindow(QMainWindow):
 
         time = self.spinbox.value()
         cli.execute(self.arches, time)
-        times = [0, 0, 0, 0, 0, 0, 0] # time steps 0 1 2 3 4
+        times = [] # time steps 0 1 2 3 4
         values: List[List[str]] = [] # [a: [], b: [], g: []]
         signals  = [] # a, b, g
 
         for v in vcd_dump.variable_values.keys():
             print("Keys: ", v)
-            values.append(['0', 'x', 'z', 'w', 'u', '-', '1'])
+            values.append([])
             signals.append(v)
 
 
@@ -340,10 +340,30 @@ class MainWindow(QMainWindow):
                 values[index].append(value)
         for v in values:
             v.pop()
+
+
+        logic_order = {
+            '0': 0,
+            'l': 1,
+            'w': 2,
+            'z': 3,
+            'u': 4,
+            '-': 5,
+            'x': 6,
+            'h': 7,
+            '1': 8,
+        }
+
+        def order(logic_value):
+            return logic_order[logic_value]
         
         figure, axis = pyplot.subplots(len(signals), 1, sharex=True)
         for i in range(len(signals)):
-            axis[i].plot(times, values[i], label=signals[i])
+            y = set(values[i])
+            y = sorted(y, key=order)
+            dummy, = axis[i].plot([0] * len(y), list(y), label = signals[i])
+            dummy.remove()
+            axis[i].plot(times, values[i], label=signals[i], color="#1f77b4")
             axis[i].legend(loc='upper right')
 
         multi = MyMultiCursor(figure.canvas, tuple(axis), color='r' , lw=1, useblit=True, horizOn=[], vertOn=axis)
