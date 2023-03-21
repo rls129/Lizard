@@ -237,7 +237,7 @@ class MainWindow(QMainWindow):
             self.save_file()
         print("Trying to compile", self.config["lastActiveFile"])
         self.arches = cli.compile(self.config["lastActiveFile"])
-        self.compiled = 1
+        self.compiled = 0
         
 
         def errorbox_error_clicked(item):
@@ -268,6 +268,7 @@ class MainWindow(QMainWindow):
         self.editor.setTextCursor(cursor_current_pos)
         
         if len(cli.error.errno) == 0:
+            self.compiled = 1
             if suppressMessage:
                 return True
             
@@ -310,7 +311,8 @@ class MainWindow(QMainWindow):
                 multi.updatex(mouseXdata, color='r')
     
         if self.compiled == 0:
-            self.compile()
+            if not self.compile(True):
+                return
 
         time = self.spinbox.value()
         cli.execute(self.arches, time)
