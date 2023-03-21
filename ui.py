@@ -16,7 +16,7 @@ import cli
 import vcd_dump
 import diagram
 
-from  typing import List, Dict
+from  typing import List, Union
 
 class MyMultiCursor(MultiCursor):
     def __init__(self, canvas, axes, useblit=True, horizOn=[], vertOn=[], xPos= None, **lineprops):
@@ -53,6 +53,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 800, 400)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self.config = {}
+        self.compiled = 0
         
         self.buffer = ''
         self.editor = QTextEditHighlighter()
@@ -64,6 +65,7 @@ class MainWindow(QMainWindow):
 
         self.myFont = QFont("Consolas", 10)
         self.editor.setFont(self.myFont)
+        self.editor.setTabStopDistance(QFontMetricsF(self.editor.font()).horizontalAdvance(' ') * 4)
         highlight = VHDLHighlighter(self.editor.document())
         # font = QFontDatabase.systemFont()
         # font.setPointSize(11)
@@ -121,6 +123,7 @@ class MainWindow(QMainWindow):
         self.add_action(file_toolbar, file_menu, "Save File",'document-save.svg',"Ctrl+s", self.save_file)
         self.add_action(file_toolbar, file_menu, "Save File As",'document-save-as.svg',"Ctrl+Shift+s", self.save_file_as)
         self.add_action(run_toolbar, run_menu, "Compile",'builder-build-symbolic.svg',"Ctrl+Shift+b", self.compile)
+        self.add_simulation_time_spin_box(run_toolbar)
         self.add_action(run_toolbar, run_menu, "Simulate",'builder-run-start-symbolic.svg',"f5", self.execute)
         self.add_action(run_toolbar, run_menu, "Generate Circuit",'',"f6", self.circuit)
 
@@ -128,6 +131,14 @@ class MainWindow(QMainWindow):
         self.show()
         self.arches = []
     
+    def add_simulation_time_spin_box(self, platform: QToolBar):
+        spinbox = QSpinBox()
+        spinbox.setStatusTip("Simulation End time")
+        spinbox.setMaximum(1000000000)
+        spinbox.setValue(1000)
+        platform.addWidget(spinbox)
+        self.spinbox = spinbox
+
     def add_action(self, file_toolbar: QToolBar, file_menu: QMenu, name, iconPath, hotkey, actionHandler):
         action = QAction(QIcon(os.path.join('res/images',iconPath)),  name , self)
         action.setStatusTip(name)
@@ -221,13 +232,14 @@ class MainWindow(QMainWindow):
     #     context.addAction(QAction("test 3", self))
     #     context.exec(e.globalPos())
 
-    
-    def compile(self):
+    def compile(self, suppressMessage = False):
         self.errorbox.clear()
         error.errno.clear()
-        self.save_file()
+        if self.buffer != self.editor.toPlainText():
+            self.save_file()
         print("Trying to compile", self.config["lastActiveFile"])
         self.arches = cli.compile(self.config["lastActiveFile"])
+        self.compiled = 0
         
 
         def errorbox_error_clicked(item):
@@ -258,6 +270,10 @@ class MainWindow(QMainWindow):
         self.editor.setTextCursor(cursor_current_pos)
         
         if len(cli.error.errno) == 0:
+            self.compiled = 1
+            if suppressMessage:
+                return True
+            
             self.statusBar().showMessage("Compilation Successful", 5000)
             QMessageBox.information(
                 self,
@@ -266,7 +282,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.StandardButton.Ok,
                 QMessageBox.StandardButton.Ok,
             )
-            return
+            return True
 
         self.errorbox.itemClicked.connect(errorbox_error_clicked)
         self.errorbox.setStyleSheet("::item {border: 1px solid black} ::item:hover {background: rgba(0,0, 100, 0.3)} ::item:selected {color: black; background:rgba(0,100,0, 0.3)}")
@@ -285,6 +301,8 @@ class MainWindow(QMainWindow):
             fmt.setUnderlineStyle(QTextCharFormat.UnderlineStyle.WaveUnderline)
             self.editor.textCursor().setCharFormat(fmt)
             self.editor.setTextCursor(cursor_current_pos)
+        
+        return False
 
 
     def execute(self):            
@@ -294,7 +312,12 @@ class MainWindow(QMainWindow):
             if mouseXdata is not None:    
                 multi.updatex(mouseXdata, color='r')
     
-        cli.execute(self.arches)
+        if self.compiled == 0:
+            if not self.compile(True):
+                return
+
+        time = self.spinbox.value()
+        cli.execute(self.arches, time)
         times = [] # time steps 0 1 2 3 4
         values: List[List[str]] = [] # [a: [], b: [], g: []]
         signals  = [] # a, b, g
@@ -319,10 +342,30 @@ class MainWindow(QMainWindow):
                 values[index].append(value)
         for v in values:
             v.pop()
+
+
+        logic_order = {
+            '0': 0,
+            'l': 1,
+            'w': 2,
+            'z': 3,
+            'u': 4,
+            '-': 5,
+            'x': 6,
+            'h': 7,
+            '1': 8,
+        }
+
+        def order(logic_value):
+            return logic_order[logic_value]
         
         figure, axis = pyplot.subplots(len(signals), 1, sharex=True)
         for i in range(len(signals)):
-            axis[i].plot(times, values[i], label=signals[i])
+            y = set(values[i])
+            y = sorted(y, key=order)
+            dummy, = axis[i].plot([0] * len(y), list(y), label = signals[i])
+            dummy.remove()
+            axis[i].plot(times, values[i], label=signals[i], color="#1f77b4")
             axis[i].legend(loc='upper right')
 
         multi = MyMultiCursor(figure.canvas, tuple(axis), color='r' , lw=1, useblit=True, horizOn=[], vertOn=axis)

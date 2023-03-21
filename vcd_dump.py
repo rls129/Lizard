@@ -26,13 +26,13 @@ def init_vcd(filename, architectures: List[Architecture]):
                 new_var = vcdWriter.register_var(f"{arch.name}.{arch.entity.name}", p.name, typ, 1) # 1 for the width as we havenot impled vector types
                 variables[p.name] = new_var
             except vcd.VCDPhaseError as e:
-                error.push_error(1,1, "Caanot Make a VCD with two signals of the same name")
+                error.push_error(1,1, "Cannot Make a VCD with two signals of the same name")
         for s in arch.signals:
             try:
                 new_var = vcdWriter.register_var(f"{arch.name}", s.name, 'reg', 1) # 1 for the width as we havenot impl'ed vector types
                 variables[s.name] = new_var
             except vcd.VCDPhaseError as e:
-                error.push_error(1,1, "Caanot Make a VCD with two signals of the same name")
+                error.push_error(1,1, "Cannot Make a VCD with two signals of the same name")
     
     for v in variables.keys():
         variable_values[v] = None

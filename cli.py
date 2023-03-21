@@ -8,6 +8,8 @@ import error
 import vcd_dump
 import diagram
 
+import sys
+
 def compile(filename):
     ast: Tree = parse("vhdl.lark", filename)
     if len(error.errno) > 0:
@@ -33,20 +35,26 @@ def compile(filename):
 
     return architectures
 
-def execute(architectures):
+def execute(architectures, time):
     simulation.current_time = 0
     simulation.to_run_till = 0
-    run_simulation(5000., architectures)
+    run_simulation(time, architectures)
     # print()
     # testbench_itr
 
 def main():
     a = compile("main.vhdl")
-    if a is not None:
-        execute(a)
-        for x in a:
-            diagram.draw(x)
-        print()
+    if len(sys.argv) == 1:
+        execute(a, 1000)
+    if len(sys.argv) >= 2:
+        try:
+            time = int(sys.argv[1])
+            execute(a, time)
+        except:
+            execute(a, 1000.)
+    for x in a:
+        diagram.draw(x)
+    print()
 
 if __name__ == "__main__":
     main()
