@@ -155,12 +155,13 @@ class MainWindow(QMainWindow):
             self.buffer = ''
             self.filePath = './'
             self.update_title()
+            self.compiled = False
 
 
     def open_file(self, autoOpen: bool = False):
         lastPath = self.filePath
         if not autoOpen:
-            self.filePath, _ = QFileDialog.getOpenFileName(self, "Open File ", os.path.dirname(self.config["lastActiveFile"]), "VHDL Files (*.vhd);; All Files (*.*)", "VHDL Files (*.vhd)")
+            self.filePath, _ = QFileDialog.getOpenFileName(self, "Open File ", os.path.dirname(self.config["lastActiveFile"]), "VHDL Files (*.vhd *.vhdl);; All Files (*.*)", "VHDL Files (*.vhd *.vhdl)")
         if self.filePath == '':
             self.filePath = lastPath
             return
@@ -171,11 +172,13 @@ class MainWindow(QMainWindow):
                 self.buffer = text
                 self.update_title()
                 self.config["lastActiveFile"] = self.filePath
+                self.compiled = False
+        
 
     def save_file(self):
         if not self.filePath or self.filePath == './':
             lastPath = self.filePath
-            self.filePath, _ = QFileDialog.getSaveFileName(self, "Save File ", os.path.dirname(self.config["lastActiveFile"]), "VHDL Files (*.vhd);; All Files (*.*)", "VHDL Files (*.vhd)")
+            self.filePath, _ = QFileDialog.getSaveFileName(self, "Save File ", os.path.dirname(self.config["lastActiveFile"]), "VHDL Files (*.vhd *.vhdl);; All Files (*.*)", "VHDL Files (*.vhd *.vhdl)")
             if self.filePath == '':
                 self.filePath = lastPath
                 return
@@ -189,7 +192,7 @@ class MainWindow(QMainWindow):
 
     def save_file_as(self):
         lastPath = self.filePath
-        self.filePath, _ = QFileDialog.getSaveFileName(self, "Save File As", os.path.dirname(self.config["lastActiveFile"]), "VHDL Files (*.vhd);; All Files (*.*)", "VHDL Files (*.vhd)")
+        self.filePath, _ = QFileDialog.getSaveFileName(self, "Save File As", os.path.dirname(self.config["lastActiveFile"]), "VHDL Files (*.vhd *.vhdl);; All Files (*.*)", "VHDL Files (*.vhd *.vhdl)")
         if self.filePath == '':
             self.filePath = lastPath
             return

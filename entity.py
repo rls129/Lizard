@@ -1,6 +1,6 @@
 from lark import Tree
 from typing import List
-from utils import default_values, cast_map
+from utils import default_values, cast_map, resolution_table
 import error
 
 class Port:
@@ -11,6 +11,18 @@ class Port:
         self.value = default_values[ptype]
         self.future_buffer = None
         self.linked_process = []
+
+    def update_future_buffer(self, value: str):
+        if self.future_buffer is None or self.future_buffer == 'None':
+            self.future_buffer = value
+            return
+        
+        if self.type == 'std_logic' or self.type == 'std_ulogic':
+            self.future_buffer = resolution_table[(self.future_buffer,value)]
+            return
+        
+        self.future_buffer = value # For every other types
+        return
 
 class Entity:
     def __init__(

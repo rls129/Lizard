@@ -18,6 +18,7 @@ class Architecture:
         self.signals_changed: List[Signal | Port] = []
         self.waiting_process  : List[Tuple[Process, float]] = []  # For processes encountering waits
         self.inactive_process : List[Process] = []  # For processes with sensitivity list
+        self.short_process_wo_sensitivity_list : List[Process] = []
 
 
 def get_arch_signals(node: Tree, entity: Entity) -> List[Signal]:

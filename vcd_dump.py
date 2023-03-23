@@ -14,6 +14,9 @@ def init_vcd(filename, architectures: List[Architecture]):
     global output
     global vcdWriter
     global variable_values
+    variable_values.clear()
+    variables.clear()
+    values_over_time.clear()
     output = open(filename, "w+")
     vcdWriter = vcd.VCDWriter(output, timescale="1 ns", date="today")
 

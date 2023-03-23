@@ -2,7 +2,7 @@ from typing import List, Optional
 from lark import Tree, Token
 from entity import Entity, Port
 from copy import deepcopy
-from utils import cast_map, default_values
+from utils import cast_map, default_values, resolution_table
 import error
 
 class Signal:
@@ -12,6 +12,18 @@ class Signal:
         self.value: str = value
         self.future_buffer: str = 'None'
         self.linked_process: List[Process] = []
+    
+    def update_future_buffer(self, value: str):
+        if self.future_buffer is None or self.future_buffer == 'None':
+            self.future_buffer = value
+            return
+        
+        if self.type == 'std_logic' or self.type == 'std_ulogic':
+            self.future_buffer = resolution_table[(self.future_buffer,value)]
+            return
+        
+        self.future_buffer = value # For every other types
+        return
 
 
 class Variable:

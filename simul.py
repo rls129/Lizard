@@ -2,7 +2,7 @@ from lark import Token, Tree
 
 
 from arch import Architecture
-from base import Process, Variable, get_compile_value
+from base import Process, Variable,  Statements, get_compile_value
 from utils import evaluate, default_values
 from typing import Tuple, List
 import vcd_dump
@@ -21,7 +21,7 @@ class Simulation:
                     min = w[1]
         self.current_time = min
         if self.current_time > self.to_run_till:
-            self.current_time = self.to_run_till
+            self.current_time = self.to_run_till + 1
 
 simulation = Simulation()
 
@@ -115,7 +115,7 @@ def execute_st(arch: Architecture, symbols: List[Variable], process: Process):
             stack.pop()
             lvalue = get_lvalue_reference(statement.children[0])
             rvalue, _ = get_runtime_value(statement.children[1], arch, symbols)
-            lvalue.future_buffer = rvalue
+            lvalue.update_future_buffer(rvalue)
             if lvalue not in arch.signals_changed:
                 arch.signals_changed.append(lvalue)
         elif statement.data.value == "variable_assignment":
@@ -126,7 +126,7 @@ def execute_st(arch: Architecture, symbols: List[Variable], process: Process):
         elif statement.data.value == "wait":
             stack.pop()
             if len(statement.children) == 0:
-                return simulation.to_run_till
+                return simulation.to_run_till + 1
             else:
                 def convert_to_nano(unit: str):
                     if unit == "ns":
@@ -183,6 +183,7 @@ def execute_process(process: Process, architecture: Architecture, waiting_proces
         statement = process.statements[0]
         lvalue = get_lvalue_reference(statement.children[0])
         rvalue, _ = get_runtime_value(statement.children[1], architecture, [])
+        lvalue.update_future_buffer(rvalue)
         lvalue.value = rvalue
         if lvalue not in architecture.signals_changed: #Intentional, replicate this
             architecture.signals_changed.append(lvalue)
@@ -207,7 +208,11 @@ def execute_process(process: Process, architecture: Architecture, waiting_proces
     if process.name == "shorthandprocess":
         if waiting_process: # Only relevant for time 0
             execute_shorthandprocess(process)
-            architecture.inactive_process.append(process)
+            if len(process.sensitivity_list) > 0:
+                architecture.inactive_process.append(process)
+            else:
+                architecture.short_process_wo_sensitivity_list.append(process)
+                
             return None
         else:
             execute_shorthandprocess(process) 
@@ -262,17 +267,25 @@ def run_simulation(exec_time: float, architectures: List[Architecture]):
                 if queue_time is not None:
                     arch.waiting_process.append((process, queue_time))
                 
-            for sig in arch.signals_changed: 
-                sig.value = sig.value if sig.future_buffer is None or sig.future_buffer == 'None' else sig.future_buffer
-                sig.future_buffer = None
-                for pr in sig.linked_process:
-                    execute_process(pr, arch, False) # Guaranteed to be inactive (aka sensitivity list)
+            temp_signals = arch.signals_changed[:]
             arch.signals_changed.clear()
+            while(len(temp_signals)):
+                for sig in temp_signals:
+                    sig.value = sig.value if sig.future_buffer is None or sig.future_buffer == 'None' else sig.future_buffer
+                    sig.future_buffer = None
 
+                for sig in temp_signals: 
+                    for pr in sig.linked_process:
+                        execute_process(pr, arch, False) # Guaranteed to be inactive (aka sensitivity list)
+                temp_signals.clear()
+                temp_signals = arch.signals_changed[:]
+                arch.signals_changed.clear()
+
+    
     vcd_data(architectures)
     simulation.perform_jump(architectures)
 
-    while(simulation.current_time < simulation.to_run_till):
+    while(simulation.current_time <= simulation.to_run_till):
         for arch in architectures:
             temp_process: List[Tuple[Process, float]] = []
             for process in arch.waiting_process:
@@ -282,12 +295,22 @@ def run_simulation(exec_time: float, architectures: List[Architecture]):
                             temp_process.append((process[0], simulation.current_time + queue_time))
             arch.waiting_process.clear()
             arch.waiting_process.extend(temp_process)
-            for sig in arch.signals_changed:
-                sig.value = sig.value if sig.future_buffer is None or sig.future_buffer == 'None' else sig.future_buffer
-                for pr in sig.linked_process:
-                    execute_process(pr, arch, False) # Guaranteed to be inactive (aka sensitivity list)
-            # arch.signals_changed.remove(sig) #should be removed once done with, but fucks up iterator so
+            for sproc in arch.short_process_wo_sensitivity_list:
+                execute_process(sproc,arch, False)
+
+            temp_signals = arch.signals_changed[:]
             arch.signals_changed.clear()
+            while(len(temp_signals)):
+                for sig in temp_signals:
+                    sig.value = sig.value if sig.future_buffer is None or sig.future_buffer == 'None' else sig.future_buffer
+                    sig.future_buffer = None
+                
+                for sig in temp_signals:
+                    for pr in sig.linked_process:
+                        execute_process(pr, arch, False) # Guaranteed to be inactive (aka sensitivity list)
+                temp_signals.clear()
+                temp_signals = arch.signals_changed[:]
+                arch.signals_changed.clear()
 
 
         vcd_data(architectures)                         
