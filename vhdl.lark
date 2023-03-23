@@ -16,7 +16,7 @@ archdefination: "begin"  (process)*
 process: shorthandprocess | longformprocess
 shorthandprocess: IDENTIFIER  "<=" value ";"
 
-longformprocess: (IDENTIFIER ":")? "process" sensitivity_list? "is" variables* "begin" statements "end" ";"
+longformprocess: (IDENTIFIER ":")? "process" sensitivity_list? "is" variables* "begin" statements "end" "process" ";"
 statements: statement+
 statement: shorthandprocess | variable_assignment | wait | report | if_statement | while_statement
 if_statement: "if" condition "then" statements elsif* else? "end" "if" ";"

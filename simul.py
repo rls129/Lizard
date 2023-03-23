@@ -2,8 +2,8 @@ from lark import Token, Tree
 
 
 from arch import Architecture
-from base import Process, Variable
-from utils import evaluate
+from base import Process, Variable, get_compile_value
+from utils import evaluate, default_values
 from typing import Tuple, List
 import vcd_dump
 
@@ -246,6 +246,14 @@ def run_simulation(exec_time: float, architectures: List[Architecture]):
     # Yes, super intentional
     if simulation.current_time == 0.:
         for arch in architectures:
+            for s in arch.signals:
+                s.value = default_values[s.type]
+                s.future_buffer = None
+            for pr in arch.processes:
+                try:
+                    pr.statements.stack.clear()
+                except:
+                    pass
             arch.signals_changed.clear()
             arch.waiting_process.clear()
             arch.inactive_process.clear()
@@ -256,6 +264,7 @@ def run_simulation(exec_time: float, architectures: List[Architecture]):
                 
             for sig in arch.signals_changed: 
                 sig.value = sig.value if sig.future_buffer is None or sig.future_buffer == 'None' else sig.future_buffer
+                sig.future_buffer = None
                 for pr in sig.linked_process:
                     execute_process(pr, arch, False) # Guaranteed to be inactive (aka sensitivity list)
             arch.signals_changed.clear()

@@ -36,8 +36,8 @@ def compile(filename):
     return architectures
 
 def execute(architectures, time):
-    simulation.current_time = 0
-    simulation.to_run_till = 0
+    simulation.current_time = 0.
+    simulation.to_run_till = 0.
     run_simulation(time, architectures)
     # print()
     # testbench_itr
