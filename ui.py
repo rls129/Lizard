@@ -385,7 +385,7 @@ class MainWindow(QMainWindow):
         if n == 0:
             return
         self.scene = QGraphicsScene(0, 0, 600, 500*n)
-        self.scene.setBackgroundBrush(Qt.gray)
+        self.scene.setBackgroundBrush(Qt.white)
         for i, arch in enumerate(self.arches):
             diagram.draw(arch, self.scene, center = (300, 250 + 500*i))
 

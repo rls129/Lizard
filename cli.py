@@ -43,7 +43,7 @@ def execute(architectures, time):
     # testbench_itr
 
 def main():
-    a = compile("main.vhdl")
+    a = compile("main.vhd")
     if len(sys.argv) == 1:
         execute(a, 1000)
     if len(sys.argv) >= 2:
@@ -52,8 +52,6 @@ def main():
             execute(a, time)
         except:
             execute(a, 1000.)
-    for x in a:
-        diagram.draw(x)
     print()
 
 if __name__ == "__main__":

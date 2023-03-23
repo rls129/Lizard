@@ -151,6 +151,7 @@ def draw(a, scene, center):
         if node["type"] == "signal" or node["type"] == "bit":
             circleitem = scene.addEllipse(x-2, y-2, 4, 4)
             textitem = scene.addText(n)
+            textitem.setDefaultTextColor(Qt.black)
             x, y = x-15, y-10
             textitem.setPos(x, y)
         elif node["type"] == "gate":
