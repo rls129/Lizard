@@ -315,6 +315,16 @@ class MainWindow(QMainWindow):
             if mouseXdata is not None:    
                 multi.updatex(mouseXdata, color='r')
     
+        def resize_plots(event):
+            for line in multi.vlines:
+                line.remove()
+            for line in multi.hlines:
+                line.remove()
+            multi.vlines.clear()
+            multi.hlines.clear()
+            multi.__init__(figure.canvas, tuple(axis), color='r' , lw=1, useblit=True, horizOn=[], vertOn=axis)
+
+
         if self.compiled == 0:
             if not self.compile(True):
                 return
@@ -373,6 +383,7 @@ class MainWindow(QMainWindow):
 
         multi = MyMultiCursor(figure.canvas, tuple(axis), color='r' , lw=1, useblit=True, horizOn=[], vertOn=axis)
         figure.canvas.mpl_connect('motion_notify_event', show_Legend)
+        figure.canvas.mpl_connect('resize_event', resize_plots)
 
         pyplot.show()
         # vcd_dump.output.close()
