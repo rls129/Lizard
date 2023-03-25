@@ -125,7 +125,7 @@ class MainWindow(QMainWindow):
         self.add_action(run_toolbar, run_menu, "Compile",'builder-build-symbolic.svg',"Ctrl+Shift+b", self.compile)
         self.add_simulation_time_spin_box(run_toolbar)
         self.add_action(run_toolbar, run_menu, "Simulate",'builder-run-start-symbolic.svg',"f5", self.execute)
-        self.add_action(run_toolbar, run_menu, "Generate Circuit",'',"f6", self.circuit)
+        self.add_action(run_toolbar, run_menu, "Generate Circuit",'kstars-grid.svg',"f6", self.circuit)
 
         self.update_title()
         self.show()
