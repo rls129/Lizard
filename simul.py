@@ -20,7 +20,7 @@ class Simulation:
                 if min < w[1]:
                     min = w[1]
         self.current_time = min
-        if self.current_time > self.to_run_till:
+        if self.current_time > self.to_run_till or min == 0.:
             self.current_time = self.to_run_till + 1
 
 simulation = Simulation()
@@ -126,7 +126,7 @@ def execute_st(arch: Architecture, symbols: List[Variable], process: Process):
         elif statement.data.value == "wait":
             stack.pop()
             if len(statement.children) == 0:
-                return simulation.to_run_till + 1
+                return None
             else:
                 def convert_to_nano(unit: str):
                     if unit == "ns":
@@ -316,5 +316,8 @@ def run_simulation(exec_time: float, architectures: List[Architecture]):
         vcd_data(architectures)                         
         simulation.perform_jump(architectures)
         pass
+
+    simulation.current_time = simulation.to_run_till
+    vcd_data(architectures)
 
     print()

@@ -60,7 +60,7 @@ class MainWindow(QMainWindow):
         self.errorbox = QListWidget()
         self.errorbox.setResizeMode(QListView.ResizeMode.Adjust)
         self.errorbox.setSizeAdjustPolicy(QListView.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
-        self.errorbox.setMaximumHeight(100)
+        self.errorbox.setMaximumHeight(150)
         self.editor.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
 
         self.myFont = QFont("Consolas", 10)
@@ -89,7 +89,11 @@ class MainWindow(QMainWindow):
 
         self.filePath = self.config["lastActiveFile"]
         if self.filePath != "./":
-            self.open_file(True)
+            try:
+                self.open_file(True)
+            except:
+                self.filePath = "./"
+                self.new_file()
         else:
             self.new_file()
 
@@ -155,7 +159,7 @@ class MainWindow(QMainWindow):
             self.buffer = ''
             self.filePath = './'
             self.update_title()
-            self.compiled = False
+            self.compiled = 0
 
 
     def open_file(self, autoOpen: bool = False):
@@ -172,7 +176,7 @@ class MainWindow(QMainWindow):
                 self.buffer = text
                 self.update_title()
                 self.config["lastActiveFile"] = self.filePath
-                self.compiled = False
+                self.compiled = 0
         
 
     def save_file(self):
