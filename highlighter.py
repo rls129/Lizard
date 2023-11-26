@@ -34,7 +34,7 @@ class VHDLHighlighter (QtGui.QSyntaxHighlighter):
     """
     # Python keywords
     keywords = [
-        'and', 'or', 'xor', 'not',
+        'and', 'or', 'xor', 'xnor', 'not', 'nor', 'nand',
         'if','elsif', 'else', 'then'  
         'case', 'when'
         'for', 'while', 'use', 'wait', 'report', 
@@ -68,7 +68,7 @@ class VHDLHighlighter (QtGui.QSyntaxHighlighter):
         rules = []
 
         # Keyword, operator, and brace rules
-        rules += [(r'\b%s\b' % w, 0, STYLES['keyword'])
+        rules += [(r'(\b%s\b)' % w, 0, STYLES['keyword'])
             for w in VHDLHighlighter.keywords]
         rules += [(r'%s' % o, 0, STYLES['operator'])
             for o in VHDLHighlighter.operators]
@@ -103,9 +103,15 @@ class VHDLHighlighter (QtGui.QSyntaxHighlighter):
         """
         self.tripleQuoutesWithinStrings = []
         # Do other syntax formatting
+        
         for expression, nth, format in self.rules:
-            index = expression.match(text.lower(), 0)
-            if index.capturedStart() >= 0:
-                self.setFormat(index.capturedStart(), index.capturedLength(), format)
+            matches = []
+            index = expression.globalMatch(text.lower())
+            while index.hasNext():
+                match = index.next()
+                matches.append(match)
+            for i in matches:
+                if i.capturedStart() >= 0:
+                    self.setFormat(i.capturedStart(), i.capturedLength(), format)
 
         self.setCurrentBlockState(0)

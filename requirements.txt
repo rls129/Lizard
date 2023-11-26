@@ -16,3 +16,4 @@ pyvcd==0.3.0
 regex==2022.10.31
 shiboken6==6.4.2
 six==1.16.0
+networkx==3.2.1
