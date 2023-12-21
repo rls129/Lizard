@@ -7,15 +7,15 @@ This is a VHDL simulator made for half year project during 6th semester of compu
   git clone --depth=1 https://github.com/rls129/Lizard/`
   cd Lizard
   ```
-3. Create a virtual env and activate it.
+2. Create a virtual env and activate it.
   ```sh
   python -m venv .venv
   source .venv/bin/activate # OR
   .venv/bin/Activate.ps1
   ```
-4. Install all dependencies from requirements.txt.
+3. Install all dependencies from requirements.txt.
   `pip install -r requirements.txt`
-5. Run the application
+4. Run the application
   `python main.py`
 
 ## Example Code
